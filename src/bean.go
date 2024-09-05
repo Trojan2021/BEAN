@@ -8,9 +8,6 @@ import (
 	"strings"
 )
 
-// TODO Use build contraints to allow compiling with different indentation levels
-const indentSpaces = 4
-
 // ReadFile reads the markdown file and returns its lines as a slice of strings.
 func ReadFile(fileName string) ([]string, error) {
 	file, err := os.Open(fileName)
