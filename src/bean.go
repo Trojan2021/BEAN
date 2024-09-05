@@ -33,12 +33,11 @@ func ReadFile(fileName string) ([]string, error) {
 	return lines, nil
 }
 
-// RenderMarkdown converts markdown lines to a CLI-friendly format.
+// RenderMarkdown converts Markdown lines to a CLI-friendly format and returns the result as a string.
 func RenderMarkdown(lines []string) string {
 	var output strings.Builder
 
-	// regex dictionary
-
+	// REGEX DICTIONARY
 	// level 1 header
 	h1 := regexp.MustCompile(`^\s*# (.*)`)
 	// level 2 header
@@ -46,8 +45,9 @@ func RenderMarkdown(lines []string) string {
 	// unordered list
 	list := regexp.MustCompile(fmt.Sprintf(`^((\s{%d})*|\t+)[-+*] (.*)`, indentSpaces))
 
-	var lastLineType uint8    // 0 = unimportant, 1 = list item
-	var visualIndentLevel int // on a new iteration, stores the value of the last visual indentation multiplier
+	var lastLineType uint8       // 0 = unimportant, 1 = list item (more to be implemented)
+	var indentMultiplier int     //stores the value of the indentation multiplier
+	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	for _, line := range lines {
 
 		switch {
@@ -58,10 +58,6 @@ func RenderMarkdown(lines []string) string {
 			output.WriteString("\033[1m" + h2.FindStringSubmatch(line)[1] + "\033[0m\n")
 			lastLineType = 0
 		case list.MatchString(line):
-			// TODO Unordered list rendering:
-			// Disallow indenting a list item by more than one level
-			// Convert tabs to groups of spaces
-
 			// save substrings matched by regex for later reference
 			substrings := list.FindStringSubmatch(line)
 
@@ -69,30 +65,39 @@ func RenderMarkdown(lines []string) string {
 			if lastLineType == 1 { // if line is not list parent...
 				// count tabs used for indentation
 				tabCount := strings.Count(substrings[1], "\t")
+				// store the visual indentation level
 				if tabCount > 0 {
-					// if tabs were used for indentation, set visualIndentLevel to the number of tabs
-					visualIndentLevel = tabCount
+					// if tabs were used for indentation, set indentMultiplier to the number of tabs
+					indentMultiplier = tabCount
 				} else {
-					// if spaces were used for indentation, set visualIndentLevel to the number of spaces divided by the indentSpaces constant
-					visualIndentLevel = len(substrings[1]) / indentSpaces
+					// if spaces were used for indentation, set indentMultiplier to the number of spaces divided by the indentSpaces constant
+					indentMultiplier = len(substrings[1]) / indentSpaces
+				}
+				// if line is indented by more than one level past the previous line, it is not valid Markdown and should be printed as-is
+				if prevIndentMultiplier+1 < indentMultiplier {
+					// TODO reduce re-used code
+					output.WriteString(line + "\n")
+					lastLineType = 0
+					break
 				}
 			} else { // if line is list parent...
-				// do not allow first list item to be indented (print as-is)
-				// TODO fallthrough for readability
+				// if first list item is indented, it is not valid Markdown and should be printed as-is
 				if substrings[1] != "" {
+					// TODO reduce re-used code
 					output.WriteString(line + "\n")
 					lastLineType = 0
 					break
 				} else { // reset visual indentation level
-					visualIndentLevel = 0
+					indentMultiplier = 0
 				}
 			}
 
 			// write the list item with the appropriate indentation
-			output.WriteString(strings.Repeat(" ", visualIndentLevel*4) + "• " + substrings[3] + "\n")
+			output.WriteString(strings.Repeat(" ", indentMultiplier*4) + "• " + substrings[3] + "\n")
 
-			// indicate that the last line was part of an unordered list
-			lastLineType = 1
+			// supply information for next line iteration
+			prevIndentMultiplier = indentMultiplier
+			lastLineType = 1 // set lastLineType to 1 (list item)
 		default:
 			output.WriteString(line + "\n")
 			lastLineType = 0
