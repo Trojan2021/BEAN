@@ -41,7 +41,7 @@ func RenderMarkdown(lines []string) string {
 	// level 2 header
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
 	// unordered list (hyphen)
-	list := regexp.MustCompile(`^\s*- (.*)`)
+	list := regexp.MustCompile(`^((\s\s\s\s)*|\t+)- (.*)`)
 
 	for _, line := range lines {
 
@@ -51,7 +51,8 @@ func RenderMarkdown(lines []string) string {
 		case h2.MatchString(line):
 			output.WriteString("\033[1m" + h2.FindStringSubmatch(line)[1] + "\033[0m\n")
 		case list.MatchString(line):
-			output.WriteString("• " + list.FindStringSubmatch(line)[1] + "\n")
+			substrings := list.FindStringSubmatch(line)
+			output.WriteString(substrings[1] + "• " + substrings[2] + "\n")
 		default:
 			output.WriteString(line + "\n")
 		}
