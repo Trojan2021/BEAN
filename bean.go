@@ -43,18 +43,41 @@ func RenderMarkdown(lines []string) string {
 	// unordered list (hyphen)
 	list := regexp.MustCompile(`^((\s\s\s\s)*|\t+)- (.*)`)
 
+	var lastLineType uint8 // 0 = unimportant, 1 = list item
 	for _, line := range lines {
 
 		switch {
 		case h1.MatchString(line):
 			output.WriteString("\033[1m\033[4m" + h1.FindStringSubmatch(line)[1] + "\033[0m\n")
+			lastLineType = 0
 		case h2.MatchString(line):
 			output.WriteString("\033[1m" + h2.FindStringSubmatch(line)[1] + "\033[0m\n")
+			lastLineType = 0
 		case list.MatchString(line):
+			// TODO Unordered list rendering:
+			// Add support for + and * list items
+			// Disallow starting a list by having an indented parent
+			// Disallow indenting a list item by more than one level
+			// Convert tabs to groups of 4 spaces
+			// Optionally support detecting how many spaces equal a tab
+
+			// save substrings matched by regex for later reference
 			substrings := list.FindStringSubmatch(line)
-			output.WriteString(substrings[1] + "• " + substrings[3] + "\n")
+
+			// determine whether to allow indented/nested list items based on if the previous line was a list item
+			var visualIndent string
+			if lastLineType == 1 {
+				visualIndent = substrings[1]
+			}
+
+			// write the list item with the appropriate indentation
+			output.WriteString(visualIndent + "• " + substrings[3] + "\n")
+
+			// indicate that the last line was part of an unordered list
+			lastLineType = 1
 		default:
 			output.WriteString(line + "\n")
+			lastLineType = 0
 		}
 	}
 
