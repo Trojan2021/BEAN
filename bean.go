@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
-
 	"regexp"
+	"strings"
 )
+
+// TODO Use build contraints to allow compiling with different indentation levels
+const indentSpaces = 4
 
 // ReadFile reads the markdown file and returns its lines as a slice of strings.
 func ReadFile(fileName string) ([]string, error) {
@@ -41,9 +43,10 @@ func RenderMarkdown(lines []string) string {
 	// level 2 header
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
 	// unordered list
-	list := regexp.MustCompile(`^((\s\s\s\s)*|\t+)[-+*] (.*)`)
+	list := regexp.MustCompile(fmt.Sprintf(`^((\s{%d})*|\t+)[-+*] (.*)`, indentSpaces))
 
-	var lastLineType uint8 // 0 = unimportant, 1 = list item
+	var lastLineType uint8    // 0 = unimportant, 1 = list item
+	var visualIndentLevel int // on a new iteration, stores the value of the last visual indentation multiplier
 	for _, line := range lines {
 
 		switch {
@@ -56,27 +59,30 @@ func RenderMarkdown(lines []string) string {
 		case list.MatchString(line):
 			// TODO Unordered list rendering:
 			// Disallow indenting a list item by more than one level
-			// Convert tabs to groups of 4 spaces
+			// Convert tabs to groups of spaces
 			// Wrap lists with handing indentation
 			// Optionally support detecting how many spaces equal a tab
 
 			// save substrings matched by regex for later reference
 			substrings := list.FindStringSubmatch(line)
 
-			// determine whether to allow indented/nested list items based on if the previous line was a list item
-			var visualIndent string
-			if lastLineType == 1 {
-				visualIndent = substrings[1]
-			} else {
+			// calculate the visual indentation level
+			if lastLineType == 1 { // if line is not list parent...
+				visualIndentLevel = len(substrings[1]) / indentSpaces
+			} else { // if line is list parent...
 				// do not allow first list item to be indented (print as-is)
+				// TODO fallthrough for readability
 				if substrings[1] != "" {
 					output.WriteString(line + "\n")
+					lastLineType = 0
 					break
+				} else { // reset visual indentation level
+					visualIndentLevel = 0
 				}
 			}
 
 			// write the list item with the appropriate indentation
-			output.WriteString(visualIndent + "• " + substrings[3] + "\n")
+			output.WriteString(strings.Repeat(" ", visualIndentLevel*4) + "• " + substrings[3] + "\n")
 
 			// indicate that the last line was part of an unordered list
 			lastLineType = 1
