@@ -36,7 +36,7 @@ func RenderMarkdown(lines []string) string {
 
 	// regex dictionary
 
-	// leavel 1 header
+	// level 1 header
 	h1 := regexp.MustCompile(`^\s*# (.*)`)
 	// level 2 header
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
