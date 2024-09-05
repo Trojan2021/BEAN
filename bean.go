@@ -55,7 +55,6 @@ func RenderMarkdown(lines []string) string {
 			lastLineType = 0
 		case list.MatchString(line):
 			// TODO Unordered list rendering:
-			// Disallow starting a list by having an indented parent
 			// Disallow indenting a list item by more than one level
 			// Convert tabs to groups of 4 spaces
 			// Wrap lists with handing indentation
@@ -68,6 +67,12 @@ func RenderMarkdown(lines []string) string {
 			var visualIndent string
 			if lastLineType == 1 {
 				visualIndent = substrings[1]
+			} else {
+				// do not allow first list item to be indented (print as-is)
+				if substrings[1] != "" {
+					output.WriteString(line + "\n")
+					break
+				}
 			}
 
 			// write the list item with the appropriate indentation
