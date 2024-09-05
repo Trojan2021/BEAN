@@ -33,6 +33,38 @@ func ReadFile(fileName string) ([]string, error) {
 	return lines, nil
 }
 
+// calcIndentMultiplier calculates the visual indentation level of a line and returns the result as an integer.
+// It also returns a boolean value indicating whether the line is valid Markdown.
+// TODO Use slice of uint8 ("compatibleLineTypes") in place of currentLineType to allow mixing elements of different types.
+func calcIndentMultiplier(prevLineType, currentLineType uint8, prevIndentMultiplier int, indentSubstring string) (bool, int) {
+	var indentMultiplier int
+	if prevLineType == 1 { // if line is not list parent...
+		// count tabs used for indentation
+		tabCount := strings.Count(indentSubstring, "\t")
+		// store the visual indentation level
+		if tabCount > 0 {
+			// if tabs were used for indentation, set indentMultiplier to the number of tabs
+			indentMultiplier = tabCount
+		} else {
+			// if spaces were used for indentation, set indentMultiplier to the number of spaces divided by the indentSpaces constant
+			indentMultiplier = len(indentSubstring) / indentSpaces
+		}
+		// if line is indented by more than one level past the previous line, it is not valid Markdown
+		if prevIndentMultiplier+1 < indentMultiplier {
+			return false, indentMultiplier
+		}
+	} else { // if line is list parent...
+		// if first list item is indented, it is not valid Markdown
+		if indentSubstring != "" {
+			return false, indentMultiplier
+		} else { // reset visual indentation level
+			indentMultiplier = 0
+		}
+	}
+
+	return true, indentMultiplier
+}
+
 // RenderMarkdown converts Markdown lines to a CLI-friendly format and returns the result as a string.
 func RenderMarkdown(lines []string) string {
 	var output strings.Builder
@@ -43,53 +75,30 @@ func RenderMarkdown(lines []string) string {
 	// level 2 header
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
 	// unordered list
-	list := regexp.MustCompile(fmt.Sprintf(`^((\s{%d})*|\t+)[-+*] (.*)`, indentSpaces))
+	ulist := regexp.MustCompile(fmt.Sprintf(`^((\s{%d})*|\t+)[-+*] (.*)`, indentSpaces))
+	// ordered list
+	olist := regexp.MustCompile(fmt.Sprintf(`^((\s{%d})*|\t+)\d+\. (.*)`, indentSpaces))
 
-	var lastLineType uint8       // 0 = unimportant, 1 = list item (more to be implemented)
-	var indentMultiplier int     //stores the value of the indentation multiplier
+	var prevLineType uint8       // 0 = unimportant, 1 = unordered list item, 2 = ordered list item
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	for _, line := range lines {
 
 		switch {
 		case h1.MatchString(line):
 			output.WriteString("\033[1m\033[4m" + h1.FindStringSubmatch(line)[1] + "\033[0m\n")
-			lastLineType = 0
+			prevLineType = 0
 		case h2.MatchString(line):
 			output.WriteString("\033[1m" + h2.FindStringSubmatch(line)[1] + "\033[0m\n")
-			lastLineType = 0
-		case list.MatchString(line):
+			prevLineType = 0
+		case ulist.MatchString(line):
 			// save substrings matched by regex for later reference
-			substrings := list.FindStringSubmatch(line)
+			substrings := ulist.FindStringSubmatch(line)
 
-			// calculate the visual indentation level
-			if lastLineType == 1 { // if line is not list parent...
-				// count tabs used for indentation
-				tabCount := strings.Count(substrings[1], "\t")
-				// store the visual indentation level
-				if tabCount > 0 {
-					// if tabs were used for indentation, set indentMultiplier to the number of tabs
-					indentMultiplier = tabCount
-				} else {
-					// if spaces were used for indentation, set indentMultiplier to the number of spaces divided by the indentSpaces constant
-					indentMultiplier = len(substrings[1]) / indentSpaces
-				}
-				// if line is indented by more than one level past the previous line, it is not valid Markdown and should be printed as-is
-				if prevIndentMultiplier+1 < indentMultiplier {
-					// TODO reduce re-used code
-					output.WriteString(line + "\n")
-					lastLineType = 0
-					break
-				}
-			} else { // if line is list parent...
-				// if first list item is indented, it is not valid Markdown and should be printed as-is
-				if substrings[1] != "" {
-					// TODO reduce re-used code
-					output.WriteString(line + "\n")
-					lastLineType = 0
-					break
-				} else { // reset visual indentation level
-					indentMultiplier = 0
-				}
+			validMarkdown, indentMultiplier := calcIndentMultiplier(prevLineType, 1, prevIndentMultiplier, substrings[1])
+			if !validMarkdown {
+				output.WriteString(line + "\n")
+				prevLineType = 0
+				break
 			}
 
 			// write the list item with the appropriate indentation
@@ -97,10 +106,11 @@ func RenderMarkdown(lines []string) string {
 
 			// supply information for next line iteration
 			prevIndentMultiplier = indentMultiplier
-			lastLineType = 1 // set lastLineType to 1 (list item)
+			prevLineType = 1 // set prevLineType to 1 (list item)
+		case olist.MatchString(line):
 		default:
 			output.WriteString(line + "\n")
-			lastLineType = 0
+			prevLineType = 0
 		}
 	}
 
