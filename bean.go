@@ -52,7 +52,7 @@ func RenderMarkdown(lines []string) string {
 			output.WriteString("\033[1m" + h2.FindStringSubmatch(line)[1] + "\033[0m\n")
 		case list.MatchString(line):
 			substrings := list.FindStringSubmatch(line)
-			output.WriteString(substrings[1] + "• " + substrings[2] + "\n")
+			output.WriteString(substrings[1] + "• " + substrings[3] + "\n")
 		default:
 			output.WriteString(line + "\n")
 		}
