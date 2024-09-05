@@ -40,8 +40,8 @@ func RenderMarkdown(lines []string) string {
 	h1 := regexp.MustCompile(`^\s*# (.*)`)
 	// level 2 header
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
-	// unordered list (hyphen)
-	list := regexp.MustCompile(`^((\s\s\s\s)*|\t+)- (.*)`)
+	// unordered list
+	list := regexp.MustCompile(`^((\s\s\s\s)*|\t+)[-+*] (.*)`)
 
 	var lastLineType uint8 // 0 = unimportant, 1 = list item
 	for _, line := range lines {
@@ -55,10 +55,10 @@ func RenderMarkdown(lines []string) string {
 			lastLineType = 0
 		case list.MatchString(line):
 			// TODO Unordered list rendering:
-			// Add support for + and * list items
 			// Disallow starting a list by having an indented parent
 			// Disallow indenting a list item by more than one level
 			// Convert tabs to groups of 4 spaces
+			// Wrap lists with handing indentation
 			// Optionally support detecting how many spaces equal a tab
 
 			// save substrings matched by regex for later reference
