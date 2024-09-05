@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+// TODO General:
+// Optionally support auto-detection of tab (space) width; if compiled to do this, replace indentSpaces with a variable holding the detected value
+// Wrap text to terminal width (or a specified percentage of it); always wrap lists with hanging indentation
+
 // ReadFile reads the markdown file and returns its lines as a slice of strings.
 func ReadFile(fileName string) ([]string, error) {
 	file, err := os.Open(fileName)
@@ -57,15 +61,21 @@ func RenderMarkdown(lines []string) string {
 			// TODO Unordered list rendering:
 			// Disallow indenting a list item by more than one level
 			// Convert tabs to groups of spaces
-			// Wrap lists with handing indentation
-			// Optionally support detecting how many spaces equal a tab
 
 			// save substrings matched by regex for later reference
 			substrings := list.FindStringSubmatch(line)
 
 			// calculate the visual indentation level
 			if lastLineType == 1 { // if line is not list parent...
-				visualIndentLevel = len(substrings[1]) / indentSpaces
+				// count tabs used for indentation
+				tabCount := strings.Count(substrings[1], "\t")
+				if tabCount > 0 {
+					// if tabs were used for indentation, set visualIndentLevel to the number of tabs
+					visualIndentLevel = tabCount
+				} else {
+					// if spaces were used for indentation, set visualIndentLevel to the number of spaces divided by the indentSpaces constant
+					visualIndentLevel = len(substrings[1]) / indentSpaces
+				}
 			} else { // if line is list parent...
 				// do not allow first list item to be indented (print as-is)
 				// TODO fallthrough for readability
