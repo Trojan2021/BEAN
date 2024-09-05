@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"regexp"
 )
 
 // ReadFile reads the markdown file and returns its lines as a slice of strings.
@@ -32,14 +34,25 @@ func ReadFile(fileName string) ([]string, error) {
 func RenderMarkdown(lines []string) string {
 	var output strings.Builder
 
+	// regex dictionary
+
+	// level 1 header
+	h1 := regexp.MustCompile(`^\s*# (.*)`)
+	// level 2 header
+	h2 := regexp.MustCompile(`^\s*## (.*)`)
+	// unordered list (hyphen)
+	list := regexp.MustCompile(`^((\s\s\s\s)*|\t+)- (.*)`)
+
 	for _, line := range lines {
+
 		switch {
-		case strings.HasPrefix(line, "# "):
-			output.WriteString("\033[1m\033[4m" + strings.TrimPrefix(line, "# ") + "\033[0m\n")
-		case strings.HasPrefix(line, "## "):
-			output.WriteString("\033[1m" + strings.TrimPrefix(line, "## ") + "\033[0m\n")
-		case strings.HasPrefix(line, "- "):
-			output.WriteString("• " + strings.TrimPrefix(line, "- ") + "\n")
+		case h1.MatchString(line):
+			output.WriteString("\033[1m\033[4m" + h1.FindStringSubmatch(line)[1] + "\033[0m\n")
+		case h2.MatchString(line):
+			output.WriteString("\033[1m" + h2.FindStringSubmatch(line)[1] + "\033[0m\n")
+		case list.MatchString(line):
+			substrings := list.FindStringSubmatch(line)
+			output.WriteString(substrings[1] + "• " + substrings[2] + "\n")
 		default:
 			output.WriteString(line + "\n")
 		}
