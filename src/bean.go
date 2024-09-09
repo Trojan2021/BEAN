@@ -74,9 +74,9 @@ func RenderMarkdown(lines []string) string {
 	// level 2 header
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
 	// unordered list
-	ulist := regexp.MustCompile(fmt.Sprintf(`^((\s{%d})*|\t+)[-+*] (.*)`, indentSpaces))
+	ulist := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)[-+*] (.*)`, indentSpaces))
 	// ordered list
-	olist := regexp.MustCompile(fmt.Sprintf(`^((\s{%d})*|\t+)\d+\. (.*)`, indentSpaces))
+	olist := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)\d+\. (.*)`, indentSpaces))
 
 	var prevLineType uint8       // 0 = unimportant, 1 = unordered list item, 2 = ordered list item
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
@@ -101,7 +101,7 @@ func RenderMarkdown(lines []string) string {
 			}
 
 			// write the list item with the appropriate indentation
-			output.WriteString(strings.Repeat(" ", indentMultiplier*4) + "• " + substrings[3] + "\n")
+			output.WriteString(strings.Repeat(" ", indentMultiplier*4) + "• " + substrings[2] + "\n")
 
 			// supply information for next line iteration
 			prevIndentMultiplier = indentMultiplier
