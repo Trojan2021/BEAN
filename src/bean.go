@@ -35,10 +35,9 @@ func ReadFile(fileName string) ([]string, error) {
 
 // calcIndentMultiplier calculates the visual indentation level of a line and returns the result as an integer.
 // It also returns a boolean value indicating whether the line is valid Markdown.
-// TODO Use slice of uint8 ("compatibleLineTypes") in place of currentLineType to allow mixing elements of different types.
 func calcIndentMultiplier(prevLineType, currentLineType uint8, prevIndentMultiplier int, indentSubstring string) (bool, int) {
 	var indentMultiplier int
-	if prevLineType == 1 { // if line is not list parent...
+	if prevLineType == currentLineType { // if line is not list parent...
 		// count tabs used for indentation
 		tabCount := strings.Count(indentSubstring, "\t")
 		// store the visual indentation level
