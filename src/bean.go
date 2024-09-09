@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -73,25 +74,30 @@ func RenderMarkdown(lines []string) string {
 	h1 := regexp.MustCompile(`^\s*# (.*)`)
 	// level 2 header
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
-	// unordered list
-	ulist := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)[-+*] (.*)`, indentSpaces))
-	// ordered list
-	olist := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)\d+\. (.*)`, indentSpaces))
+	// (un)ordered list
+	list := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)([-+*] |\d+\. )(.*)`, indentSpaces))
 
-	var prevLineType uint8       // 0 = unimportant, 1 = unordered list item, 2 = ordered list item
+	// ALL
+	var prevLineType uint8 // 0 = unimportant, 1 = list item
+	// LISTS
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
+	var bullet string            // stores the bullet character for lists
+	// LISTS: ORDERED
+	var orderedIterator int // stores the current number of the ordered list item
 	for _, line := range lines {
 
 		switch {
 		case h1.MatchString(line):
 			output.WriteString("\033[1m\033[4m" + h1.FindStringSubmatch(line)[1] + "\033[0m\n")
 			prevLineType = 0
+			orderedIterator = 0
 		case h2.MatchString(line):
 			output.WriteString("\033[1m" + h2.FindStringSubmatch(line)[1] + "\033[0m\n")
 			prevLineType = 0
-		case ulist.MatchString(line):
+			orderedIterator = 0
+		case list.MatchString(line):
 			// save substrings matched by regex for later reference
-			substrings := ulist.FindStringSubmatch(line)
+			substrings := list.FindStringSubmatch(line)
 
 			validMarkdown, indentMultiplier := calcIndentMultiplier(prevLineType, 1, prevIndentMultiplier, substrings[1])
 			if !validMarkdown {
@@ -100,16 +106,30 @@ func RenderMarkdown(lines []string) string {
 				break
 			}
 
+			if substrings[2][0] != '-' && substrings[2][0] != '+' && substrings[2][0] != '*' {
+				// operations to take for ordered lists
+				if indentMultiplier == prevIndentMultiplier {
+					orderedIterator++
+				} else {
+					orderedIterator = 1
+				}
+				bullet = strconv.Itoa(orderedIterator) + ". "
+			} else {
+				// operations to take for unordered lists
+				bullet = "• "
+				orderedIterator = 0
+			}
+
 			// write the list item with the appropriate indentation
-			output.WriteString(strings.Repeat(" ", indentMultiplier*4) + "• " + substrings[2] + "\n")
+			output.WriteString(strings.Repeat(" ", indentMultiplier*4) + bullet + substrings[3] + "\n")
 
 			// supply information for next line iteration
 			prevIndentMultiplier = indentMultiplier
 			prevLineType = 1 // set prevLineType to 1 (list item)
-		case olist.MatchString(line):
 		default:
 			output.WriteString(line + "\n")
 			prevLineType = 0
+			orderedIterator = 0
 		}
 	}
 
