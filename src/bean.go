@@ -123,11 +123,11 @@ func RenderMarkdown(lines []string) string {
 	// level 2 header
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
 	// bold text
-	bold := regexp.MustCompile(`^(.*)(\*\*.*?\*\*|__.*?__)(.*)`)
+	bold := regexp.MustCompile(`^(.*)(\*\*.+?\*\*|__.+?__)(.*)`)
 	// italic text
-	italic := regexp.MustCompile(`^(.*)(\*.*?\*|_.*?_)(.*)`)
+	italic := regexp.MustCompile(`^(.*)(\*.+?\*|_.+?_)(.*)`)
 	// strikethrough text
-	strikethrough := regexp.MustCompile(`^(.*)~~(.*?)~~(.*)`)
+	strikethrough := regexp.MustCompile(`^(.*)~~(.+?)~~(.*)`)
 	// (un)ordered list item
 	list := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)([-+*] |\d+\. )(.*)`, indentSpaces))
 
