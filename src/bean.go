@@ -40,7 +40,6 @@ func RenderMarkdown(lines []string) string {
 	// variables to keep value between iterations
 	/// ALL
 	var output strings.Builder
-	var prevLineType uint8 // 0 = unimportant, 1 = list item
 	/// LISTS
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	var bullet string            // stores the bullet character for lists
@@ -50,30 +49,21 @@ func RenderMarkdown(lines []string) string {
 
 	// calcIndentMultiplier calculates the visual indentation level of a line and returns the result as an integer.
 	// It also returns a boolean value indicating whether the line is valid Markdown.
-	calcIndentMultiplier := func(currentLineType uint8, indentSubstring string) (bool, int) {
+	calcIndentMultiplier := func(indentSubstring string) (bool, int) {
 		var indentMultiplier int
-		if prevLineType == currentLineType { // if line is not list parent...
-			// count tabs used for indentation
-			tabCount := strings.Count(indentSubstring, "\t")
-			// store the visual indentation level
-			if tabCount > 0 {
-				// if tabs were used for indentation, set indentMultiplier to the number of tabs
-				indentMultiplier = tabCount
-			} else {
-				// if spaces were used for indentation, set indentMultiplier to the number of spaces divided by the indentSpaces constant
-				indentMultiplier = len(indentSubstring) / indentSpaces
-			}
-			// if line is indented by more than one level past the previous line, it is not valid Markdown
-			if prevIndentMultiplier+1 < indentMultiplier {
-				return false, indentMultiplier
-			}
-		} else { // if line is list parent...
-			// if first list item is indented, it is not valid Markdown
-			if indentSubstring != "" {
-				return false, indentMultiplier
-			} else { // reset visual indentation level
-				indentMultiplier = 0
-			}
+		// count tabs used for indentation
+		tabCount := strings.Count(indentSubstring, "\t")
+		// store the visual indentation level
+		if tabCount > 0 {
+			// if tabs were used for indentation, set indentMultiplier to the number of tabs
+			indentMultiplier = tabCount
+		} else {
+			// if spaces were used for indentation, set indentMultiplier to the number of spaces divided by the indentSpaces constant
+			indentMultiplier = len(indentSubstring) / indentSpaces
+		}
+		// if line is indented by more than one level past the previous line, it is not valid Markdown
+		if prevIndentMultiplier+1 < indentMultiplier {
+			return false, indentMultiplier
 		}
 		return true, indentMultiplier
 	}
@@ -94,7 +84,6 @@ func RenderMarkdown(lines []string) string {
 	}
 
 	resetPreloopVariables := func(lineType uint8) {
-		prevLineType = lineType
 		prevIndentMultiplier = 0
 		orderedIterator = 0
 		orderedIteratorHistory = nil
@@ -159,7 +148,7 @@ func RenderMarkdown(lines []string) string {
 			// save substrings matched by regex for later reference
 			substrings := list.FindStringSubmatch(line)
 
-			validMarkdown, indentMultiplier := calcIndentMultiplier(1, substrings[1])
+			validMarkdown, indentMultiplier := calcIndentMultiplier(substrings[1])
 			if !validMarkdown {
 				renderParagraph(line)
 				break
@@ -196,7 +185,6 @@ func RenderMarkdown(lines []string) string {
 
 			// supply information for next line iteration
 			prevIndentMultiplier = indentMultiplier
-			prevLineType = 1 // set prevLineType to 1 (list item)
 
 		default:
 			renderParagraph(line)
