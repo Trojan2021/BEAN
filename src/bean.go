@@ -77,6 +77,28 @@ func RenderMarkdown(lines []string) string {
 		return true, indentMultiplier
 	}
 
+	manageOrderedIteratorHistory := func(indentMultiplier int) {
+		if indentMultiplier > prevIndentMultiplier {
+			// if indenting in, add the current orderedIterator to the history and reset the iterator
+			orderedIteratorHistory = append(orderedIteratorHistory, orderedIterator)
+			orderedIterator = 1
+		} else {
+			// if indenting out, determine how many levels
+			outLevels := prevIndentMultiplier - indentMultiplier
+			// pick up from the proper element in the history
+			orderedIterator = orderedIteratorHistory[len(orderedIteratorHistory)-outLevels] + 1
+			// remove the used elements from the history
+			orderedIteratorHistory = orderedIteratorHistory[:len(orderedIteratorHistory)-outLevels]
+		}
+	}
+
+	resetPreloopVariables := func(lineType uint8) {
+		prevLineType = lineType
+		prevIndentMultiplier = 0
+		orderedIterator = 0
+		orderedIteratorHistory = nil
+	}
+
 	// REGEX DICTIONARY
 	// level 1 header
 	h1 := regexp.MustCompile(`^\s*# (.*)`)
@@ -87,16 +109,16 @@ func RenderMarkdown(lines []string) string {
 
 	// loop over matched regex
 	for _, line := range lines {
-
 		switch {
+
 		case h1.MatchString(line):
 			output.WriteString("\033[1m\033[4m" + h1.FindStringSubmatch(line)[1] + "\033[0m\n")
-			prevLineType = 0
-			orderedIterator = 0
+			resetPreloopVariables(0)
+
 		case h2.MatchString(line):
 			output.WriteString("\033[1m" + h2.FindStringSubmatch(line)[1] + "\033[0m\n")
-			prevLineType = 0
-			orderedIterator = 0
+			resetPreloopVariables(0)
+
 		case list.MatchString(line):
 			// save substrings matched by regex for later reference
 			substrings := list.FindStringSubmatch(line)
@@ -108,29 +130,19 @@ func RenderMarkdown(lines []string) string {
 				break
 			}
 
-			if substrings[2][0] != '-' && substrings[2][0] != '+' && substrings[2][0] != '*' {
-				// operations to take for ordered lists
-				if indentMultiplier == prevIndentMultiplier {
-					orderedIterator++
-				} else {
-					if indentMultiplier > prevIndentMultiplier {
-						// if indenting in, add the current orderedIterator to the history and reset the iterator
-						orderedIteratorHistory = append(orderedIteratorHistory, orderedIterator)
-						orderedIterator = 1
-					} else {
-						// if indenting out, determine how many levels
-						outLevels := prevIndentMultiplier - indentMultiplier
-						// pick up from the proper element in the history
-						orderedIterator = orderedIteratorHistory[len(orderedIteratorHistory)-outLevels] + 1
-						// remove the used elements from the history
-						orderedIteratorHistory = orderedIteratorHistory[:len(orderedIteratorHistory)-outLevels]
-					}
-				}
-				bullet = strconv.Itoa(orderedIterator) + ". "
-			} else {
+			switch substrings[2][0] {
+			case '-', '+', '*':
 				// operations to take for unordered lists
 				bullet = "• "
 				orderedIterator = 0
+			default:
+				// operations to take for ordered lists
+				if indentMultiplier == prevIndentMultiplier {
+					orderedIterator++
+				} else { // if indenting in or out, manage the history
+					manageOrderedIteratorHistory(indentMultiplier)
+				}
+				bullet = strconv.Itoa(orderedIterator) + ". "
 			}
 
 			// write the list item with the appropriate indentation
@@ -139,10 +151,10 @@ func RenderMarkdown(lines []string) string {
 			// supply information for next line iteration
 			prevIndentMultiplier = indentMultiplier
 			prevLineType = 1 // set prevLineType to 1 (list item)
+
 		default:
 			output.WriteString(line + "\n")
-			prevLineType = 0
-			orderedIterator = 0
+			resetPreloopVariables(0)
 		}
 	}
 
