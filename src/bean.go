@@ -10,8 +10,9 @@ import (
 )
 
 // TODO General:
-// Optionally support auto-detection of tab (space) width; if compiled to do this, replace indentSpaces with a variable holding the detected value
+// Allow combining multiple Markdown elements in a single line (bold and italic text, text within a list item, etc.)
 // Wrap text to terminal width (or a specified percentage of it); always wrap lists with hanging indentation
+// Optionally support auto-detection of tab (space) width; if compiled to do this, replace indentSpaces with a variable holding the detected value
 
 // ReadFile reads the markdown file and returns its lines as a slice of strings.
 func ReadFile(fileName string) ([]string, error) {
@@ -99,6 +100,23 @@ func RenderMarkdown(lines []string) string {
 		orderedIteratorHistory = nil
 	}
 
+	renderParagraph := func(line string) {
+		if strings.TrimSpace(line) == "" {
+			// if line is empty, skip a line
+			output.WriteString("\n\n")
+		} else if strings.TrimRight(line, "  ") != line {
+			// if line ends in two+ spaces, write the line with a newline character
+			output.WriteString(line + "\n")
+		} else if strings.HasSuffix(line, "<br>") {
+			// if line ends in <br>, write the line with a newline character and strip the <br> tag
+			output.WriteString(line[:len(line)-4] + "\n")
+		} else {
+			// if line is not empty, write the line with a space at the end (for paragraph formatting)
+			output.WriteString(line + " ")
+		}
+		resetPreloopVariables(0)
+	}
+
 	// REGEX DICTIONARY
 	// level 1 header
 	h1 := regexp.MustCompile(`^\s*# (.*)`)
@@ -127,15 +145,15 @@ func RenderMarkdown(lines []string) string {
 
 		case bold.MatchString(line):
 			substrings := bold.FindStringSubmatch(line)
-			output.WriteString(substrings[1] + "\033[1m" + substrings[2][2:len(substrings[2])-2] + "\033[0m" + substrings[3] + " ")
+			renderParagraph(substrings[1] + "\033[1m" + substrings[2][2:len(substrings[2])-2] + "\033[0m" + substrings[3])
 
 		case italic.MatchString(line):
 			substrings := italic.FindStringSubmatch(line)
-			output.WriteString(substrings[1] + "\033[3m" + substrings[2][1:len(substrings[2])-1] + "\033[0m" + substrings[3] + " ")
+			renderParagraph(substrings[1] + "\033[3m" + substrings[2][1:len(substrings[2])-1] + "\033[0m" + substrings[3])
 
 		case strikethrough.MatchString(line):
 			substrings := strikethrough.FindStringSubmatch(line)
-			output.WriteString(substrings[1] + "\033[9m" + substrings[2] + "\033[0m" + substrings[3] + " ")
+			renderParagraph(substrings[1] + "\033[9m" + substrings[2] + "\033[0m" + substrings[3])
 
 		case list.MatchString(line):
 			// save substrings matched by regex for later reference
@@ -143,8 +161,7 @@ func RenderMarkdown(lines []string) string {
 
 			validMarkdown, indentMultiplier := calcIndentMultiplier(1, substrings[1])
 			if !validMarkdown {
-				output.WriteString(line + "\n")
-				prevLineType = 0
+				renderParagraph(line)
 				break
 			}
 
@@ -182,8 +199,7 @@ func RenderMarkdown(lines []string) string {
 			prevLineType = 1 // set prevLineType to 1 (list item)
 
 		default:
-			output.WriteString(line + "\n")
-			resetPreloopVariables(0)
+			renderParagraph(line)
 		}
 	}
 
