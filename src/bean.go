@@ -10,7 +10,7 @@ import (
 )
 
 // TODO General:
-// Allow combining multiple Markdown elements in a single line (bold and italic text, text within a list item, etc.)
+// Allow a single peice of text to be simultaneously any combination bold, italic, and strikethrough
 // Wrap text to terminal width (or a specified percentage of it); always wrap lists with hanging indentation
 // Optionally support auto-detection of tab (space) width; if compiled to do this, replace indentSpaces with a variable holding the detected value
 
@@ -39,7 +39,7 @@ func ReadFile(fileName string) ([]string, error) {
 func RenderMarkdown(lines []string) string {
 	// variables to keep value between iterations
 	/// ALL
-	var output strings.Builder
+	var output strings.Builder // stores the work-in-progress final output string
 	/// LISTS
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	var bullet string            // stores the bullet character for lists
@@ -89,107 +89,140 @@ func RenderMarkdown(lines []string) string {
 		orderedIteratorHistory = nil
 	}
 
-	renderParagraph := func(line string) {
+	renderParagraph := func(line string) string {
+		var outputString string
 		if strings.TrimSpace(line) == "" {
 			// if line is empty, skip a line
-			output.WriteString("\n\n")
+			outputString = "\n\n"
 		} else if strings.TrimRight(line, "  ") != line {
 			// if line ends in two+ spaces, write the line with a newline character
-			output.WriteString(line + "\n")
+			outputString = line + "\n"
 		} else if strings.HasSuffix(line, "<br>") {
 			// if line ends in <br>, write the line with a newline character and strip the <br> tag
-			output.WriteString(line[:len(line)-4] + "\n")
+			outputString = line[:len(line)-4] + "\n"
 		} else {
 			// if line is not empty, write the line with a space at the end (for paragraph formatting)
-			output.WriteString(line + " ")
+			outputString = line + " "
 		}
 		resetPreloopVariables(0)
+		return outputString
 	}
 
 	// REGEX DICTIONARY
-	// level 1 header
+	// level 1 header (1)
 	h1 := regexp.MustCompile(`^\s*# (.*)`)
-	// level 2 header
+	// level 2 header (2)
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
-	// bold text
+	// bold text (7)
 	bold := regexp.MustCompile(`^(.*)([^*]\*\*[^*].+?[^*]\*\*[^*]|[^_]__[^_].+?[^_]__[^_])(.*)`)
-	// italic text
+	// italic text (8)
 	italic := regexp.MustCompile(`^(.*)([^*]\*[^*].+?[^*]\*[^*]|[^_]_[^_].+?[^_]_[^_])(.*)`)
-	// strikethrough text
+	// strikethrough text (9)
 	strikethrough := regexp.MustCompile(`^(.*)~~(.+?)~~(.*)`)
-	// (un)ordered list item
+	// (un)ordered list item (10)
 	list := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)([-+*] |\d+\. )(.*)`, indentSpaces))
 
-	// loop over matched regex
+	// iterate over lines
 	for _, line := range lines {
-		switch {
 
-		case h1.MatchString(line):
-			output.WriteString("\033[1m\033[4m" + h1.FindStringSubmatch(line)[1] + "\033[0m\n")
-			resetPreloopVariables(0)
+		// detect matched regex for current line
+		var matched []uint8
+		if h1.MatchString(line) {
+			matched = append(matched, 1)
+		}
+		if h2.MatchString(line) {
+			matched = append(matched, 2)
+		}
+		if bold.MatchString(line) {
+			matched = append(matched, 7)
+		}
+		if italic.MatchString(line) {
+			matched = append(matched, 8)
+		}
+		if strikethrough.MatchString(line) {
+			matched = append(matched, 9)
+		}
+		if list.MatchString(line) {
+			matched = append(matched, 10)
+		}
 
-		case h2.MatchString(line):
-			output.WriteString("\033[1m" + h2.FindStringSubmatch(line)[1] + "\033[0m\n")
-			resetPreloopVariables(0)
+		// iterate over each matched Markdown element in the current line
+		var internalOutput = line // stores the work-in-progress output for the current line
+		var doNotRenderParagraph bool
+		for _, element := range matched {
 
-		case bold.MatchString(line):
-			substrings := bold.FindStringSubmatch(line)
-			renderParagraph(substrings[1] + "\033[1m " + substrings[2][3:len(substrings[2])-3] + " \033[0m" + substrings[3])
+			switch element {
 
-		case italic.MatchString(line):
-			substrings := italic.FindStringSubmatch(line)
-			renderParagraph(substrings[1] + "\033[3m " + substrings[2][2:len(substrings[2])-2] + " \033[0m" + substrings[3])
+			case 1:
+				// level 1 header
+				internalOutput = "\033[1m\033[4m" + h1.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
+				doNotRenderParagraph = true
+			case 2:
+				// level 2 header
+				internalOutput = "\033[1m" + h2.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
+				doNotRenderParagraph = true
+			case 7:
+				// bold text
+				substrings := bold.FindStringSubmatch(internalOutput)
+				internalOutput = substrings[1] + "\033[1m " + substrings[2][3:len(substrings[2])-3] + " \033[0m" + substrings[3]
+			case 8:
+				// italic text
+				substrings := italic.FindStringSubmatch(internalOutput)
+				internalOutput = substrings[1] + "\033[3m " + substrings[2][2:len(substrings[2])-2] + " \033[0m" + substrings[3]
+			case 9:
+				// strikethrough text
+				substrings := strikethrough.FindStringSubmatch(internalOutput)
+				internalOutput = substrings[1] + "\033[9m" + substrings[2] + "\033[0m" + substrings[3]
+			case 10:
+				// (un)ordered list item
+				// save substrings matched by regex for later reference
+				substrings := list.FindStringSubmatch(internalOutput)
 
-		case strikethrough.MatchString(line):
-			substrings := strikethrough.FindStringSubmatch(line)
-			renderParagraph(substrings[1] + "\033[9m" + substrings[2] + "\033[0m" + substrings[3])
-
-		case list.MatchString(line):
-			// save substrings matched by regex for later reference
-			substrings := list.FindStringSubmatch(line)
-
-			validMarkdown, indentMultiplier := calcIndentMultiplier(substrings[1])
-			if !validMarkdown {
-				renderParagraph(line)
-				break
-			}
-
-			switch substrings[2][0] {
-			case '-', '+', '*':
-				// operations to take for unordered lists
-				bullet = "• "
-
-				if substrings[1] == "" {
-					// if the item is an unordered list parent, reset the orderedIterator and its history
-					orderedIterator = 0
-					orderedIteratorHistory = nil
-				} else if indentMultiplier != prevIndentMultiplier {
-					// otherwise, if changing the indentation level, manage the history of ordered list iterators
-					// must be done for compatibility with mixed ordered/unordered lists
-					manageOrderedIteratorHistory(indentMultiplier)
+				validMarkdown, indentMultiplier := calcIndentMultiplier(substrings[1])
+				if !validMarkdown {
+					// do nothing (do not process as list item)
+					break
 				}
-			default:
-				// operations to take for ordered lists
-				if indentMultiplier == prevIndentMultiplier {
-					// if not changing the indentation level, increment the iterator
-					orderedIterator++
-				} else {
-					// otherwise, manage the history of ordered list iterators
-					manageOrderedIteratorHistory(indentMultiplier)
+				doNotRenderParagraph = true
+
+				switch substrings[2][0] {
+				case '-', '+', '*':
+					// operations to take for unordered lists
+					bullet = "• "
+
+					if substrings[1] == "" {
+						// if the item is an unordered list parent, reset the orderedIterator and its history
+						orderedIterator = 0
+						orderedIteratorHistory = nil
+					} else if indentMultiplier != prevIndentMultiplier {
+						// otherwise, if changing the indentation level, manage the history of ordered list iterators
+						// must be done for compatibility with mixed ordered/unordered lists
+						manageOrderedIteratorHistory(indentMultiplier)
+					}
+				default:
+					// operations to take for ordered lists
+					if indentMultiplier == prevIndentMultiplier {
+						// if not changing the indentation level, increment the iterator
+						orderedIterator++
+					} else {
+						// otherwise, manage the history of ordered list iterators
+						manageOrderedIteratorHistory(indentMultiplier)
+					}
+					bullet = strconv.Itoa(orderedIterator) + ". "
 				}
-				bullet = strconv.Itoa(orderedIterator) + ". "
+
+				// write the list item with the appropriate indentation
+				internalOutput = strings.Repeat(" ", indentMultiplier*4) + bullet + substrings[3] + "\n"
+
+				// supply information for next line iteration
+				prevIndentMultiplier = indentMultiplier
 			}
-
-			// write the list item with the appropriate indentation
-			output.WriteString(strings.Repeat(" ", indentMultiplier*4) + bullet + substrings[3] + "\n")
-
-			// supply information for next line iteration
-			prevIndentMultiplier = indentMultiplier
-
-		default:
-			renderParagraph(line)
+		}
+		if !doNotRenderParagraph {
+			output.WriteString(renderParagraph(internalOutput))
+		} else {
+			output.WriteString(internalOutput)
 		}
 	}
-
 	return output.String()
 }
