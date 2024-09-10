@@ -104,6 +104,12 @@ func RenderMarkdown(lines []string) string {
 	h1 := regexp.MustCompile(`^\s*# (.*)`)
 	// level 2 header
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
+	// bold text
+	bold := regexp.MustCompile(`^(.*)(\*\*.*?\*\*|__.*?__)(.*)`)
+	// italic text
+	italic := regexp.MustCompile(`^(.*)(\*.*?\*|_.*?_)(.*)`)
+	// strikethrough text
+	strikethrough := regexp.MustCompile(`^(.*)~~(.*?)~~(.*)`)
 	// (un)ordered list item
 	list := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)([-+*] |\d+\. )(.*)`, indentSpaces))
 
@@ -118,6 +124,18 @@ func RenderMarkdown(lines []string) string {
 		case h2.MatchString(line):
 			output.WriteString("\033[1m" + h2.FindStringSubmatch(line)[1] + "\033[0m\n")
 			resetPreloopVariables(0)
+
+		case bold.MatchString(line):
+			substrings := bold.FindStringSubmatch(line)
+			output.WriteString(substrings[1] + "\033[1m" + substrings[2][2:len(substrings[2])-2] + "\033[0m" + substrings[3] + " ")
+
+		case italic.MatchString(line):
+			substrings := italic.FindStringSubmatch(line)
+			output.WriteString(substrings[1] + "\033[3m" + substrings[2][1:len(substrings[2])-1] + "\033[0m" + substrings[3] + " ")
+
+		case strikethrough.MatchString(line):
+			substrings := strikethrough.FindStringSubmatch(line)
+			output.WriteString(substrings[1] + "\033[9m" + substrings[2] + "\033[0m" + substrings[3] + " ")
 
 		case list.MatchString(line):
 			// save substrings matched by regex for later reference
