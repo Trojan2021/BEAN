@@ -34,57 +34,58 @@ func ReadFile(fileName string) ([]string, error) {
 	return lines, nil
 }
 
-// calcIndentMultiplier calculates the visual indentation level of a line and returns the result as an integer.
-// It also returns a boolean value indicating whether the line is valid Markdown.
-func calcIndentMultiplier(prevLineType, currentLineType uint8, prevIndentMultiplier int, indentSubstring string) (bool, int) {
-	var indentMultiplier int
-	if prevLineType == currentLineType { // if line is not list parent...
-		// count tabs used for indentation
-		tabCount := strings.Count(indentSubstring, "\t")
-		// store the visual indentation level
-		if tabCount > 0 {
-			// if tabs were used for indentation, set indentMultiplier to the number of tabs
-			indentMultiplier = tabCount
-		} else {
-			// if spaces were used for indentation, set indentMultiplier to the number of spaces divided by the indentSpaces constant
-			indentMultiplier = len(indentSubstring) / indentSpaces
-		}
-		// if line is indented by more than one level past the previous line, it is not valid Markdown
-		if prevIndentMultiplier+1 < indentMultiplier {
-			return false, indentMultiplier
-		}
-	} else { // if line is list parent...
-		// if first list item is indented, it is not valid Markdown
-		if indentSubstring != "" {
-			return false, indentMultiplier
-		} else { // reset visual indentation level
-			indentMultiplier = 0
-		}
-	}
-
-	return true, indentMultiplier
-}
-
 // RenderMarkdown converts Markdown lines to a CLI-friendly format and returns the result as a string.
 func RenderMarkdown(lines []string) string {
+	// variables to keep value between iterations
+	/// ALL
 	var output strings.Builder
+	var prevLineType uint8 // 0 = unimportant, 1 = list item
+	/// LISTS
+	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
+	var bullet string            // stores the bullet character for lists
+	/// LISTS: ORDERED
+	var orderedIterator int          // stores the current number of the ordered list item
+	var orderedIteratorHistory []int // stores the history of ordered list items
+
+	// calcIndentMultiplier calculates the visual indentation level of a line and returns the result as an integer.
+	// It also returns a boolean value indicating whether the line is valid Markdown.
+	calcIndentMultiplier := func(currentLineType uint8, indentSubstring string) (bool, int) {
+		var indentMultiplier int
+		if prevLineType == currentLineType { // if line is not list parent...
+			// count tabs used for indentation
+			tabCount := strings.Count(indentSubstring, "\t")
+			// store the visual indentation level
+			if tabCount > 0 {
+				// if tabs were used for indentation, set indentMultiplier to the number of tabs
+				indentMultiplier = tabCount
+			} else {
+				// if spaces were used for indentation, set indentMultiplier to the number of spaces divided by the indentSpaces constant
+				indentMultiplier = len(indentSubstring) / indentSpaces
+			}
+			// if line is indented by more than one level past the previous line, it is not valid Markdown
+			if prevIndentMultiplier+1 < indentMultiplier {
+				return false, indentMultiplier
+			}
+		} else { // if line is list parent...
+			// if first list item is indented, it is not valid Markdown
+			if indentSubstring != "" {
+				return false, indentMultiplier
+			} else { // reset visual indentation level
+				indentMultiplier = 0
+			}
+		}
+		return true, indentMultiplier
+	}
 
 	// REGEX DICTIONARY
 	// level 1 header
 	h1 := regexp.MustCompile(`^\s*# (.*)`)
 	// level 2 header
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
-	// (un)ordered list
+	// (un)ordered list item
 	list := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)([-+*] |\d+\. )(.*)`, indentSpaces))
 
-	// ALL
-	var prevLineType uint8 // 0 = unimportant, 1 = list item
-	// LISTS
-	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
-	var bullet string            // stores the bullet character for lists
-	// LISTS: ORDERED
-	var orderedIterator int          // stores the current number of the ordered list item
-	var orderedIteratorHistory []int // stores the history of ordered list items
+	// loop over matched regex
 	for _, line := range lines {
 
 		switch {
@@ -100,7 +101,7 @@ func RenderMarkdown(lines []string) string {
 			// save substrings matched by regex for later reference
 			substrings := list.FindStringSubmatch(line)
 
-			validMarkdown, indentMultiplier := calcIndentMultiplier(prevLineType, 1, prevIndentMultiplier, substrings[1])
+			validMarkdown, indentMultiplier := calcIndentMultiplier(1, substrings[1])
 			if !validMarkdown {
 				output.WriteString(line + "\n")
 				prevLineType = 0
