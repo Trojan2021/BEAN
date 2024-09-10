@@ -83,12 +83,6 @@ func RenderMarkdown(lines []string) string {
 		}
 	}
 
-	resetPreloopVariables := func(lineType uint8) {
-		prevIndentMultiplier = 0
-		orderedIterator = 0
-		orderedIteratorHistory = nil
-	}
-
 	renderParagraph := func(line string) string {
 		var outputString string
 		if strings.TrimSpace(line) == "" {
@@ -104,7 +98,12 @@ func RenderMarkdown(lines []string) string {
 			// if line is not empty, write the line with a space at the end (for paragraph formatting)
 			outputString = line + " "
 		}
-		resetPreloopVariables(0)
+
+		// reset list variables (safe since lists are never rendered as paragraphs)
+		prevIndentMultiplier = 0
+		orderedIterator = 0
+		orderedIteratorHistory = nil
+
 		return outputString
 	}
 
