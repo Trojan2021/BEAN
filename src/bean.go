@@ -83,7 +83,8 @@ func RenderMarkdown(lines []string) string {
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	var bullet string            // stores the bullet character for lists
 	// LISTS: ORDERED
-	var orderedIterator int // stores the current number of the ordered list item
+	var orderedIterator int          // stores the current number of the ordered list item
+	var orderedIteratorHistory []int // stores the history of ordered list items
 	for _, line := range lines {
 
 		switch {
@@ -111,7 +112,18 @@ func RenderMarkdown(lines []string) string {
 				if indentMultiplier == prevIndentMultiplier {
 					orderedIterator++
 				} else {
-					orderedIterator = 1
+					if indentMultiplier > prevIndentMultiplier {
+						// if indenting in, add the current orderedIterator to the history and reset the iterator
+						orderedIteratorHistory = append(orderedIteratorHistory, orderedIterator)
+						orderedIterator = 1
+					} else {
+						// if indenting out, determine how many levels
+						outLevels := prevIndentMultiplier - indentMultiplier
+						// pick up from the proper element in the history
+						orderedIterator = orderedIteratorHistory[len(orderedIteratorHistory)-outLevels] + 1
+						// remove the used elements from the history
+						orderedIteratorHistory = orderedIteratorHistory[:len(orderedIteratorHistory)-outLevels]
+					}
 				}
 				bullet = strconv.Itoa(orderedIterator) + ". "
 			} else {
