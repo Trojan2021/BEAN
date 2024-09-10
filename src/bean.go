@@ -134,12 +134,23 @@ func RenderMarkdown(lines []string) string {
 			case '-', '+', '*':
 				// operations to take for unordered lists
 				bullet = "• "
-				orderedIterator = 0
+
+				if substrings[1] == "" {
+					// if the item is an unordered list parent, reset the orderedIterator and its history
+					orderedIterator = 0
+					orderedIteratorHistory = nil
+				} else if indentMultiplier != prevIndentMultiplier {
+					// otherwise, if changing the indentation level, manage the history of ordered list iterators
+					// must be done for compatibility with mixed ordered/unordered lists
+					manageOrderedIteratorHistory(indentMultiplier)
+				}
 			default:
 				// operations to take for ordered lists
 				if indentMultiplier == prevIndentMultiplier {
+					// if not changing the indentation level, increment the iterator
 					orderedIterator++
-				} else { // if indenting in or out, manage the history
+				} else {
+					// otherwise, manage the history of ordered list iterators
 					manageOrderedIteratorHistory(indentMultiplier)
 				}
 				bullet = strconv.Itoa(orderedIterator) + ". "
