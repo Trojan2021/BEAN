@@ -2,6 +2,8 @@ package bean
 
 import (
 	"testing"
+
+	bean "github.com/Trojan2021/BEAN/src"
 )
 
 func TestRenderMarkdown(t *testing.T) {
@@ -34,7 +36,7 @@ func TestRenderMarkdown(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			output := RenderMarkdown(tt.input)
+			output := bean.RenderMarkdown(tt.input)
 			if output != tt.expected {
 				t.Errorf("got %q, want %q", output, tt.expected)
 			}
