@@ -43,6 +43,7 @@ func RenderMarkdown(lines []string) string {
 	/// LISTS
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	var bullet string            // stores the bullet character for lists
+	var linesLength = len(lines) // stores the length of the input lines slice
 	/// LISTS: ORDERED
 	var orderedIterator int          // stores the current number of the ordered list item
 	var orderedIteratorHistory []int // stores the history of ordered list items
@@ -124,7 +125,7 @@ func RenderMarkdown(lines []string) string {
 	list := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)([-+*] |\d+\. )(.*)`, indentSpaces))
 
 	// iterate over lines
-	for _, line := range lines {
+	for i, line := range lines {
 
 		// render each matched Markdown element in the current line
 		var internalOutput = line // stores the work-in-progress output for the current line
@@ -197,8 +198,16 @@ func RenderMarkdown(lines []string) string {
 				bullet = strconv.Itoa(orderedIterator) + ". "
 			}
 
+			// determine if the next line is a list item (to determine if a newline character is needed after the current list item)
+			var lineEnding string
+			if linesLength >= i+2 && strings.TrimSpace(lines[i+1]) != "" {
+				lineEnding = "\n"
+			} else {
+				lineEnding = ""
+			}
+
 			// write the list item with the appropriate indentation
-			internalOutput = strings.Repeat(" ", indentMultiplier*4) + bullet + substrings[3] + "\n"
+			internalOutput = strings.Repeat(" ", indentMultiplier*4) + bullet + substrings[3] + lineEnding
 
 			// supply information for next line iteration
 			prevIndentMultiplier = indentMultiplier
