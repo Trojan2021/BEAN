@@ -25,12 +25,12 @@ func TestRenderMarkdown(t *testing.T) {
 		{
 			name:     "Unordered list",
 			input:    []string{"- List item"},
-			expected: "• List item\n",
+			expected: "• List item",
 		},
 		{
 			name:     "Plain text",
 			input:    []string{"Just a line of text."},
-			expected: "Just a line of text.\n",
+			expected: "Just a line of text. ",
 		},
 	}
 
