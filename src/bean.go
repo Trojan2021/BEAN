@@ -9,9 +9,6 @@ import (
 	"strings"
 )
 
-// TODO Before Merge:
-// Allow a single piece of text to be formatted with any combination of bold, italic, and strikethrough (simultaneously)
-
 // TODO General:
 // Fix misnumbering of ordered lists when they follow an unordered list at the same indentation level (only affects child lists)
 // Wrap text to terminal width (or a specified percentage of it); always wrap lists with hanging indentation
@@ -38,7 +35,7 @@ func ReadFile(fileName string) ([]string, error) {
 	return lines, nil
 }
 
-// RenderMarkdown converts Markdown lines to a CLI-friendly format and returns the result as a string.
+// RenderMarkdown renders the input lines as Markdown formatted for the CLI using ANSI escape codes.
 func RenderMarkdown(lines []string) string {
 	// variables to keep value between iterations
 	/// ALL
@@ -71,7 +68,8 @@ func RenderMarkdown(lines []string) string {
 		return true, indentMultiplier
 	}
 
-	manageOrderedIteratorHistory := func(indentMultiplier int) {
+	// updateOrderedIteratorHistory updates the history of ordered list items based on changes in indentation level.
+	updateOrderedIteratorHistory := func(indentMultiplier int) {
 		if indentMultiplier > prevIndentMultiplier {
 			// if indenting in, add the current orderedIterator to the history and reset the iterator
 			orderedIteratorHistory = append(orderedIteratorHistory, orderedIterator)
@@ -86,6 +84,7 @@ func RenderMarkdown(lines []string) string {
 		}
 	}
 
+	// renderParagraph returns the input line as a Markdown paragraph-formatted string.
 	renderParagraph := func(line string) string {
 		var outputString string
 		if strings.TrimSpace(line) == "" {
@@ -127,7 +126,7 @@ func RenderMarkdown(lines []string) string {
 	// iterate over lines
 	for _, line := range lines {
 
-		// iterate over each matched Markdown element in the current line
+		// render each matched Markdown element in the current line
 		var internalOutput = line // stores the work-in-progress output for the current line
 		var doNotRenderParagraph bool
 		if h1.MatchString(internalOutput) {
@@ -139,7 +138,7 @@ func RenderMarkdown(lines []string) string {
 			doNotRenderParagraph = true
 		}
 		for m := 0; m < 1; {
-			if bold.MatchString(internalOutput) {
+			if bold.MatchString(internalOutput) { // bold must be rendered first to avoid matching as italic
 				substrings := bold.FindStringSubmatch(internalOutput)
 				internalOutput = substrings[1] + "\033[1m" + substrings[2][2:len(substrings[2])-2] + "\033[0m" + substrings[3]
 			} else {
@@ -182,9 +181,9 @@ func RenderMarkdown(lines []string) string {
 					orderedIterator = 0
 					orderedIteratorHistory = nil
 				} else if indentMultiplier != prevIndentMultiplier {
-					// otherwise, if changing the indentation level, manage the history of ordered list iterators
+					// otherwise, if changing the indentation level, update the history of ordered list iterators
 					// must be done for compatibility with mixed ordered/unordered lists
-					manageOrderedIteratorHistory(indentMultiplier)
+					updateOrderedIteratorHistory(indentMultiplier)
 				}
 			default:
 				// operations to take for ordered lists
@@ -192,8 +191,8 @@ func RenderMarkdown(lines []string) string {
 					// if not changing the indentation level, increment the iterator
 					orderedIterator++
 				} else {
-					// otherwise, manage the history of ordered list iterators
-					manageOrderedIteratorHistory(indentMultiplier)
+					// otherwise, update the history of ordered list iterators
+					updateOrderedIteratorHistory(indentMultiplier)
 				}
 				bullet = strconv.Itoa(orderedIterator) + ". "
 			}
