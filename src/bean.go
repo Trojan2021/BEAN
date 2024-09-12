@@ -116,9 +116,9 @@ func RenderMarkdown(lines []string) string {
 	// level 2 header (2)
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
 	// bold text (7)
-	bold := regexp.MustCompile(`^(.*)(\*\*[^*].+?[^*]\*\*|__[^_].+?[^_]__)(.*)`)
+	bold := regexp.MustCompile(`^(.*)(\*\*.+?\*\*|__.+?__)(.*)`)
 	// italic text (8)
-	italic := regexp.MustCompile(`^(.*)(\*[^*].+?[^*]\*|[^_]_[^_].+?[^_]_[^_])(.*)`)
+	italic := regexp.MustCompile(`^(.*)(\*.+?\*|_.+?_)(.*)`)
 	// strikethrough text (9)
 	strikethrough := regexp.MustCompile(`^(.*)~~(.+?)~~(.*)`)
 	// (un)ordered list item (10)
@@ -141,8 +141,7 @@ func RenderMarkdown(lines []string) string {
 		for m := 0; m < 1; {
 			if bold.MatchString(internalOutput) {
 				substrings := bold.FindStringSubmatch(internalOutput)
-				strippedEmphasisText := strings.TrimSpace(substrings[2])
-				internalOutput = substrings[1] + "\033[1m" + strippedEmphasisText[2:len(strippedEmphasisText)-2] + "\033[0m" + substrings[3]
+				internalOutput = substrings[1] + "\033[1m" + substrings[2][2:len(substrings[2])-2] + "\033[0m" + substrings[3]
 			} else {
 				m++
 			}
@@ -150,8 +149,7 @@ func RenderMarkdown(lines []string) string {
 		for m := 0; m < 1; {
 			if italic.MatchString(internalOutput) {
 				substrings := italic.FindStringSubmatch(internalOutput)
-				strippedEmphasisText := strings.TrimSpace(substrings[2])
-				internalOutput = substrings[1] + "\033[3m" + strippedEmphasisText[1:len(strippedEmphasisText)-1] + "\033[0m" + substrings[3]
+				internalOutput = substrings[1] + "\033[3m" + substrings[2][1:len(substrings[2])-1] + "\033[0m" + substrings[3]
 			} else {
 				m++
 			}
