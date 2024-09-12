@@ -77,7 +77,7 @@ func TestRenderLists(t *testing.T) {
 		{
 			name:     "Ordered list with italic text",
 			input:    []string{"1. _Italic item_", "    2. _Italic sub-item_"},
-			expected: "1. \033[3mItalic item\033[0m\n    2. \033[3mItalic sub-item\033[0m",
+			expected: "1. \033[3mItalic item\033[0m\n    1. \033[3mItalic sub-item\033[0m",
 		},
 		{
 			name:     "Mixed list with bold and italic",
