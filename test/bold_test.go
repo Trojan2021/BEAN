@@ -1,9 +1,9 @@
-package bean
+package test
 
 import (
 	"testing"
 
-	bean "github.com/Trojan2021/BEAN/src"
+	bean "github.com/Trojan2021/BEAN/render"
 )
 
 func TestRenderBoldText(t *testing.T) {
@@ -81,7 +81,7 @@ func TestRenderBoldText(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			output := bean.RenderMarkdown(tt.input)
 			if output != tt.expected {
-				t.Errorf("got %q, want %q", output, tt.expected)
+				bufferFailure(t, output, tt.expected)
 			}
 		})
 	}

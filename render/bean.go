@@ -1,4 +1,4 @@
-package bean
+package render
 
 import (
 	"bufio"

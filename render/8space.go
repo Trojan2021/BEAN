@@ -1,5 +1,5 @@
 //go:build 8space
 
-package bean
+package render
 
 const indentSpaces = 8

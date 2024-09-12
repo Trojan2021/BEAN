@@ -1,5 +1,5 @@
 //go:build 6space
 
-package bean
+package render
 
 const indentSpaces = 6
