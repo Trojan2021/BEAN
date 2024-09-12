@@ -124,6 +124,22 @@ func RenderMarkdown(lines []string) string {
 	// (un)ordered list item (10)
 	list := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)([-+*] |\d+\. )(.*)`, indentSpaces))
 
+	// determineHeaderLineBeginning returns a string with the appropriate number of newline characters to print before a header.
+	determineHeaderLineBeginning := func(i int, lines *[]string) string {
+		var lineBeginning string
+		if i != 0 {
+			prevLineTrimmed := strings.TrimSpace((*lines)[i-1])
+			if prevLineTrimmed != "" {
+				if list.MatchString(prevLineTrimmed) {
+					lineBeginning = "\n"
+				} else {
+					lineBeginning = "\n\n"
+				}
+			}
+		}
+		return lineBeginning
+	}
+
 	// iterate over lines
 	for i, line := range lines {
 
@@ -131,11 +147,11 @@ func RenderMarkdown(lines []string) string {
 		var internalOutput = line // stores the work-in-progress output for the current line
 		var doNotRenderParagraph bool
 		if h1.MatchString(internalOutput) {
-			internalOutput = "\033[1m\033[4m" + h1.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
+			internalOutput = determineHeaderLineBeginning(i, &lines) + "\033[1m\033[4m" + h1.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
 			doNotRenderParagraph = true
 		}
 		if h2.MatchString(internalOutput) {
-			internalOutput = "\033[1m" + h2.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
+			internalOutput = determineHeaderLineBeginning(i, &lines) + "\033[1m" + h2.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
 			doNotRenderParagraph = true
 		}
 		for m := 0; m < 1; {
