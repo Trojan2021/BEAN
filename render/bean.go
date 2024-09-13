@@ -113,29 +113,25 @@ func RenderMarkdown(lines []string) string {
 			return ""
 		}
 
-		var prevLineTrimmed string
-		if lineNumber != 0 {
-			prevLineTrimmed = strings.TrimSpace((*lines)[lineNumber-1])
-		} else {
-			prevLineTrimmed = "null"
-		}
-
 		// delcare variables to store work-in-progress strings
 		var lineBeginning string
 		var outputString string
 
-		// begin line with two newline characters if the previous line is empty, the current one is not, and the previous element was a paragraph
-		// (the empty line signals the end of a paragraph, meaning the current line is the beginning of a new paragraph)
-		if prevLineTrimmed == "" && currentLineTrimmed != "" {
-			if prevElements[0] == 0 {
+		// headers require an extra newline character to break away from paragraphs
+		// determine if following a paragraph
+
+		// begin line with two newline characters if starting a new paragraph following another paragraph
+		if currentLineTrimmed != "" {
+			if prevElements[0] == 255 && prevElements[1] == 0 {
 				lineBeginning = "\n\n"
 			} else {
-				// if the previous element was not a paragraph, only one newline character is needed
-				lineBeginning = "\n"
+				// do not begin line with newline character if the previous line is part of the current paragraph
+				lineBeginning = ""
 			}
 		} else {
 			// do not begin line with newline character if the previous line is part of the current paragraph
 			// (the previous line is not empty)
+			// or if the current line is empty
 			lineBeginning = ""
 		}
 
@@ -215,7 +211,7 @@ func RenderMarkdown(lines []string) string {
 			if bold.MatchString(internalOutput) { // bold must be rendered first to avoid matching as italic
 				substrings := bold.FindStringSubmatch(internalOutput)
 				internalOutput = substrings[1] + "\033[1m" + substrings[2][2:len(substrings[2])-2] + "\033[0m" + substrings[3]
-				updatePrevElements(0)
+				// do not update prevElements since bold/italic/strikethrough is part of a paragraph (consider it unmatched so that renderParagraph can handle it properly)
 			} else {
 				break
 			}
@@ -224,7 +220,6 @@ func RenderMarkdown(lines []string) string {
 			if italic.MatchString(internalOutput) {
 				substrings := italic.FindStringSubmatch(internalOutput)
 				internalOutput = substrings[1] + "\033[3m" + substrings[2][1:len(substrings[2])-1] + "\033[0m" + substrings[3]
-				updatePrevElements(0)
 			} else {
 				break
 			}
@@ -233,7 +228,6 @@ func RenderMarkdown(lines []string) string {
 			if strikethrough.MatchString(internalOutput) {
 				substrings := strikethrough.FindStringSubmatch(internalOutput)
 				internalOutput = substrings[1] + "\033[9m" + substrings[2] + "\033[0m" + substrings[3]
-				updatePrevElements(0)
 			} else {
 				break
 			}
@@ -282,7 +276,7 @@ func RenderMarkdown(lines []string) string {
 		}
 
 		// determine whether to render line as paragraph
-		if !matchedSomething || prevElements[0] == 0 {
+		if !matchedSomething {
 			// render as paragraph if no Markdown was matched or if a paragraph was explicitly matched
 			output.WriteString(renderParagraph(i, &lines, internalOutput))
 		} else {
