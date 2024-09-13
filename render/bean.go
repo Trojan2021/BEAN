@@ -90,16 +90,9 @@ func RenderMarkdown(lines []string) string {
 	// It also sets matchedSomething to true to indicate that the current line matched some Markdown syntax.
 	updatePrevElements := func(element uint8) {
 		if prevElements[0] != element {
-
-			// avoid filling the history with blank lines
-			//if element == 255 && prevElements[1] == element {
-			//	return
-			//}
-
 			prevElements[1] = prevElements[0]
 			prevElements[0] = element
 		}
-
 		matchedSomething = true
 	}
 
