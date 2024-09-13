@@ -40,10 +40,11 @@ func RenderMarkdown(lines []string) string {
 	// variables to keep value between iterations
 	/// ALL
 	var output strings.Builder // stores the work-in-progress final output string
+	var prevElements [2]uint8  // stores the integer representation of the last rendered element [0] and the last rendered element different from the most recent [1] (0 = paragraph, 1 = header, 10 = list item, 255 = none)
+	var matchedSomething bool  // indicates whether the current line matched any Markdown syntax
 	/// LISTS
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	var bullet string            // stores the bullet character for lists
-	var linesLength = len(lines) // stores the length of the input lines slice
 	/// LISTS: ORDERED
 	var orderedIterator int          // stores the current number of the ordered list item
 	var orderedIteratorHistory []int // stores the history of ordered list items
@@ -85,29 +86,75 @@ func RenderMarkdown(lines []string) string {
 		}
 	}
 
+	// updatePrevElements updates the prevElements slice with the most recent element.
+	// It also sets matchedSomething to true to indicate that the current line matched some Markdown syntax.
+	updatePrevElements := func(element uint8) {
+		if prevElements[0] != element {
+
+			// avoid filling the history with blank lines
+			//if element == 255 && prevElements[1] == element {
+			//	return
+			//}
+
+			prevElements[1] = prevElements[0]
+			prevElements[0] = element
+		}
+
+		matchedSomething = true
+	}
+
 	// renderParagraph returns the input line as a Markdown paragraph-formatted string.
-	renderParagraph := func(line string) string {
+	renderParagraph := func(lineNumber int, lines *[]string, lineInProgress string) string {
+		// trim spaces from current and previous line (later used to determine if they are empty)
+		currentLineTrimmed := strings.TrimSpace(lineInProgress)
+		if currentLineTrimmed == "" {
+			// do not render empty lines; indicate that the previous element did not match any Markdown syntax
+			updatePrevElements(255)
+			return ""
+		}
+
+		// delcare variables to store work-in-progress strings
+		var lineBeginning string
 		var outputString string
-		if strings.TrimSpace(line) == "" {
-			// if line is empty, skip a line
-			outputString = "\n\n"
-		} else if strings.TrimRight(line, "  ") != line {
+
+		// headers require an extra newline character to break away from paragraphs
+		// determine if following a paragraph
+
+		// begin line with two newline characters if starting a new paragraph following another paragraph
+		if currentLineTrimmed != "" {
+			if prevElements[0] == 255 && prevElements[1] == 0 {
+				lineBeginning = "\n\n"
+			} else {
+				// do not begin line with newline character if the previous line is part of the current paragraph
+				lineBeginning = ""
+			}
+		} else {
+			// do not begin line with newline character if the previous line is part of the current paragraph
+			// (the previous line is not empty)
+			// or if the current line is empty
+			lineBeginning = ""
+		}
+
+		if strings.TrimRight(lineInProgress, "  ") != lineInProgress {
 			// if line ends in two+ spaces, write the line with a newline character
-			outputString = line + "\n"
-		} else if strings.HasSuffix(line, "<br>") {
+			outputString = strings.TrimRight(lineInProgress, " ") + "\n"
+		} else if strings.HasSuffix(lineInProgress, "<br>") {
 			// if line ends in <br>, write the line with a newline character and strip the <br> tag
-			outputString = line[:len(line)-4] + "\n"
+			outputString = lineInProgress[:len(lineInProgress)-4] + "\n"
 		} else {
 			// if line is not empty, write the line with a space at the end (for paragraph formatting)
-			outputString = line + " "
+			outputString = lineInProgress + " "
 		}
 
 		// reset list variables (safe since lists are never rendered as paragraphs)
+		// TODO once lists and paragraphs are made mutually exclusive, simply perform this action whenever not rendering a list
 		prevIndentMultiplier = 0
 		orderedIterator = 0
 		orderedIteratorHistory = nil
 
-		return outputString
+		updatePrevElements(0) // indicate that the current line is a paragraph (it passed the blank line check)
+
+		return lineBeginning + outputString
 	}
 
 	// REGEX DICTIONARY
@@ -124,58 +171,65 @@ func RenderMarkdown(lines []string) string {
 	// (un)ordered list item (10)
 	list := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)([-+*] |\d+\. )(.*)`, indentSpaces))
 
-	// determineHeaderLineBeginning returns a string with the appropriate number of newline characters to print before a header.
-	determineHeaderLineBeginning := func(i int, lines *[]string) string {
-		var lineBeginning string
-		if i != 0 {
-			prevLineTrimmed := strings.TrimSpace((*lines)[i-1])
-			if prevLineTrimmed != "" {
-				if list.MatchString(prevLineTrimmed) {
-					lineBeginning = "\n"
-				} else {
-					lineBeginning = "\n\n"
-				}
-			}
+	// getHeaderBeginning returns the appropriate number of newline characters to begin a header.
+	getHeaderBeginning := func(lineNumber int) string {
+		// do not begin line with newline character if it is the first line
+		if lineNumber == 0 {
+			return ""
 		}
-		return lineBeginning
+
+		// headers require only one newline character if the previous element is a list or a header
+		// this is because all list items and headers end in a newline character]
+		if prevElements[0] == 10 || prevElements[0] == 1 || (prevElements[0] == 255 && (prevElements[1] == 10 || prevElements[1] == 1)) {
+			return "\n"
+		}
+
+		// headers require an extra newline character to break away from paragraphs
+		// determine if following a paragraph
+		if prevElements[0] == 0 || (prevElements[0] == 255 && prevElements[1] == 0) {
+			return "\n\n"
+		}
+
+		return ""
 	}
 
 	// iterate over lines
 	for i, line := range lines {
 
 		// render each matched Markdown element in the current line
+		matchedSomething = false
 		var internalOutput = line // stores the work-in-progress output for the current line
-		var doNotRenderParagraph bool
 		if h1.MatchString(internalOutput) {
-			internalOutput = determineHeaderLineBeginning(i, &lines) + "\033[1m\033[4m" + h1.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
-			doNotRenderParagraph = true
+			internalOutput = getHeaderBeginning(i) + "\033[1m\033[4m" + h1.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
+			updatePrevElements(1)
 		}
 		if h2.MatchString(internalOutput) {
-			internalOutput = determineHeaderLineBeginning(i, &lines) + "\033[1m" + h2.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
-			doNotRenderParagraph = true
+			internalOutput = getHeaderBeginning(i) + "\033[1m" + h2.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
+			updatePrevElements(1)
 		}
-		for m := 0; m < 1; {
+		for {
 			if bold.MatchString(internalOutput) { // bold must be rendered first to avoid matching as italic
 				substrings := bold.FindStringSubmatch(internalOutput)
 				internalOutput = substrings[1] + "\033[1m" + substrings[2][2:len(substrings[2])-2] + "\033[0m" + substrings[3]
+				// do not update prevElements since bold/italic/strikethrough is part of a paragraph (consider it unmatched so that renderParagraph can handle it properly)
 			} else {
-				m++
+				break
 			}
 		}
-		for m := 0; m < 1; {
+		for {
 			if italic.MatchString(internalOutput) {
 				substrings := italic.FindStringSubmatch(internalOutput)
 				internalOutput = substrings[1] + "\033[3m" + substrings[2][1:len(substrings[2])-1] + "\033[0m" + substrings[3]
 			} else {
-				m++
+				break
 			}
 		}
-		for m := 0; m < 1; {
+		for {
 			if strikethrough.MatchString(internalOutput) {
 				substrings := strikethrough.FindStringSubmatch(internalOutput)
 				internalOutput = substrings[1] + "\033[9m" + substrings[2] + "\033[0m" + substrings[3]
 			} else {
-				m++
+				break
 			}
 		}
 		if list.MatchString(internalOutput) {
@@ -186,7 +240,6 @@ func RenderMarkdown(lines []string) string {
 				// do nothing (do not process as list item)
 				break
 			}
-			doNotRenderParagraph = true
 
 			switch substrings[2][0] {
 			case '-', '+', '*':
@@ -214,26 +267,29 @@ func RenderMarkdown(lines []string) string {
 				bullet = strconv.Itoa(orderedIterator) + ". "
 			}
 
-			// determine if the next line is a list item (to determine if a newline character is needed after the current list item)
-			var lineEnding string
-			if linesLength >= i+2 && strings.TrimSpace(lines[i+1]) != "" {
-				lineEnding = "\n"
-			} else {
-				lineEnding = ""
+			// if the previous line is not a list item/header OR if the previous line is blank but the last matched element was not a list item/header,
+			// preceed the list item with a newline character
+			var lineBeginning string
+			if i != 0 && (prevElements[0] != 10 && prevElements[0] != 1) || (prevElements[0] == 255 && (prevElements[1] != 10 && prevElements[1] != 1)) {
+				lineBeginning = "\n"
 			}
 
 			// write the list item with the appropriate indentation
-			internalOutput = strings.Repeat(" ", indentMultiplier*4) + bullet + substrings[3] + lineEnding
+			internalOutput = lineBeginning + strings.Repeat(" ", indentMultiplier*4) + bullet + substrings[3] + "\n"
 
 			// supply information for next line iteration
 			prevIndentMultiplier = indentMultiplier
+			updatePrevElements(10)
 		}
 
-		if !doNotRenderParagraph {
-			output.WriteString(renderParagraph(internalOutput))
+		// determine whether to render line as paragraph
+		if !matchedSomething {
+			// render as paragraph if no Markdown was matched or if a paragraph was explicitly matched
+			output.WriteString(renderParagraph(i, &lines, internalOutput))
 		} else {
 			output.WriteString(internalOutput)
 		}
 	}
+
 	return output.String()
 }
