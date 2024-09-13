@@ -44,9 +44,10 @@ func RenderMarkdown(lines []string) string {
 	var matchedSomething bool  // indicates whether the current line matched any Markdown syntax
 	/// LISTS
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
+	var prevListWasOrdered bool  // stores whether the previous list was ordered
 	var bullet string            // stores the bullet character for lists
 	/// LISTS: ORDERED
-	var orderedIterator int          // stores the current number of the ordered list item
+	var orderedIterator = 1          // stores the current number of the ordered list item
 	var orderedIteratorHistory []int // stores the history of ordered list items
 
 	// calcIndentMultiplier calculates the visual indentation level of a line and returns the result as an integer.
@@ -96,6 +97,16 @@ func RenderMarkdown(lines []string) string {
 		matchedSomething = true
 	}
 
+	// resetListVariables resets the variables used for list rendering.
+	// It should be called whenever a list is not being rendered (currently headers and paragraphs).
+	resetListVariables := func() {
+		// TODO once lists and paragraphs are made mutually exclusive, simply perform this action whenever not rendering a list
+		prevIndentMultiplier = 0
+		orderedIterator = 1
+		orderedIteratorHistory = nil
+		prevListWasOrdered = false
+	}
+
 	// renderParagraph returns the input line as a Markdown paragraph-formatted string.
 	renderParagraph := func(lineNumber int, lines *[]string, lineInProgress string) string {
 		// trim spaces from current and previous line (later used to determine if they are empty)
@@ -103,6 +114,7 @@ func RenderMarkdown(lines []string) string {
 		if currentLineTrimmed == "" {
 			// do not render empty lines; indicate that the previous element did not match any Markdown syntax
 			updatePrevElements(255)
+			resetListVariables() // break lists on empty lines
 			return ""
 		}
 
@@ -139,11 +151,7 @@ func RenderMarkdown(lines []string) string {
 			outputString = lineInProgress + " "
 		}
 
-		// reset list variables (safe since lists are never rendered as paragraphs)
-		// TODO once lists and paragraphs are made mutually exclusive, simply perform this action whenever not rendering a list
-		prevIndentMultiplier = 0
-		orderedIterator = 0
-		orderedIteratorHistory = nil
+		resetListVariables()
 
 		updatePrevElements(0) // indicate that the current line is a paragraph (it passed the blank line check)
 
@@ -166,6 +174,9 @@ func RenderMarkdown(lines []string) string {
 
 	// getHeaderBeginning returns the appropriate number of newline characters to begin a header.
 	getHeaderBeginning := func(lineNumber int) string {
+		// since this function is run whenever a header is being rendered, reset list variables
+		resetListVariables()
+
 		// do not begin line with newline character if it is the first line
 		if lineNumber == 0 {
 			return ""
@@ -241,23 +252,29 @@ func RenderMarkdown(lines []string) string {
 
 				if substrings[1] == "" {
 					// if the item is an unordered list parent, reset the orderedIterator and its history
-					orderedIterator = 0
+					orderedIterator = 1
 					orderedIteratorHistory = nil
 				} else if indentMultiplier != prevIndentMultiplier {
 					// otherwise, if changing the indentation level, update the history of ordered list iterators
 					// must be done for compatibility with mixed ordered/unordered lists
 					updateOrderedIteratorHistory(indentMultiplier)
 				}
+
+				prevListWasOrdered = false
 			default:
 				// operations to take for ordered lists
 				if indentMultiplier == prevIndentMultiplier {
 					// if not changing the indentation level, increment the iterator
-					orderedIterator++
+					if prevListWasOrdered {
+						orderedIterator++
+					}
 				} else {
 					// otherwise, update the history of ordered list iterators
 					updateOrderedIteratorHistory(indentMultiplier)
 				}
 				bullet = strconv.Itoa(orderedIterator) + ". "
+
+				prevListWasOrdered = true
 			}
 
 			// if the previous line is not a list item/header OR if the previous line is blank but the last matched element was not a list item/header,
