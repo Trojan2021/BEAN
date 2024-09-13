@@ -141,7 +141,7 @@ func RenderMarkdown(lines []string) string {
 
 		if strings.TrimRight(lineInProgress, "  ") != lineInProgress {
 			// if line ends in two+ spaces, write the line with a newline character
-			outputString = lineInProgress + "\n"
+			outputString = strings.TrimRight(lineInProgress, " ") + "\n"
 		} else if strings.HasSuffix(lineInProgress, "<br>") {
 			// if line ends in <br>, write the line with a newline character and strip the <br> tag
 			outputString = lineInProgress[:len(lineInProgress)-4] + "\n"
