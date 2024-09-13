@@ -112,7 +112,13 @@ func RenderMarkdown(lines []string) string {
 			updatePrevElements(255)
 			return ""
 		}
-		prevLineTrimmed := strings.TrimSpace((*lines)[lineNumber-1])
+
+		var prevLineTrimmed string
+		if lineNumber != 0 {
+			prevLineTrimmed = strings.TrimSpace((*lines)[lineNumber-1])
+		} else {
+			prevLineTrimmed = "null"
+		}
 
 		// delcare variables to store work-in-progress strings
 		var lineBeginning string
