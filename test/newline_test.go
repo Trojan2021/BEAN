@@ -30,18 +30,18 @@ func TestNewline(t *testing.T) {
 		},
 		{
 			name:     "Paragraph followed by list (minimal spacing)",
-			input:    []string{"This is a happy little paragraph", "- First item", "Second item", "\t- Sub item 1", "- Third item"},
-			expected: "This is a happy little paragraph\n• First item\n• Second item\n    • Sub item 1\n• Third item",
+			input:    []string{"This is a happy little paragraph", "- First item", "- Second item", "\t- Sub item 1", "- Third item"},
+			expected: "This is a happy little paragraph \n• First item\n• Second item\n    • Sub item 1\n• Third item\n",
 		},
 		{
 			name:     "Paragraph followed by list (standard spacing)",
-			input:    []string{"This is a happy little paragraph", "", "- First item", "Second item", "\t- Sub item 1", "- Third item"},
-			expected: "This is a happy little paragraph\n• First item\n• Second item\n    • Sub item 1\n• Third item",
+			input:    []string{"This is a happy little paragraph", "", "- First item", "- Second item", "\t- Sub item 1", "- Third item"},
+			expected: "This is a happy little paragraph \n• First item\n• Second item\n    • Sub item 1\n• Third item\n",
 		},
 		{
 			name:     "Paragraph followed by list (exaggerated spacing)",
-			input:    []string{"This is a happy little paragraph", "", "", "", "", "", "", "", "", "- First item", "Second item", "\t- Sub item 1", "- Third item"},
-			expected: "This is a happy little paragraph\n• First item\n• Second item\n    • Sub item 1\n• Third item",
+			input:    []string{"This is a happy little paragraph", "", "", "", "", "", "", "", "", "- First item", "- Second item", "\t- Sub item 1", "- Third item"},
+			expected: "This is a happy little paragraph \n• First item\n• Second item\n    • Sub item 1\n• Third item\n",
 		},
 	}
 	for _, tt := range tests {

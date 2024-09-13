@@ -267,8 +267,15 @@ func RenderMarkdown(lines []string) string {
 				bullet = strconv.Itoa(orderedIterator) + ". "
 			}
 
+			// if the previous line is not a list item/header OR if the previous line is blank but the last matched element was not a list item/header,
+			// preceed the list item with a newline character
+			var lineBeginning string
+			if i != 0 && (prevElements[0] != 10 && prevElements[0] != 1) || (prevElements[0] == 255 && (prevElements[1] != 10 && prevElements[1] != 1)) {
+				lineBeginning = "\n"
+			}
+
 			// write the list item with the appropriate indentation
-			internalOutput = strings.Repeat(" ", indentMultiplier*4) + bullet + substrings[3] + "\n"
+			internalOutput = lineBeginning + strings.Repeat(" ", indentMultiplier*4) + bullet + substrings[3] + "\n"
 
 			// supply information for next line iteration
 			prevIndentMultiplier = indentMultiplier
