@@ -59,6 +59,11 @@ func TestRenderLists(t *testing.T) {
 			expected: "1. First item\n    • Sub item 1\n    • Sub item 2\n2. Second item\n",
 		},
 		{
+			name:     "Mixed list (unordered AND ordered inside ordered, tab input)",
+			input:    []string{"1. First item", "\t- Sub item 1", "\t1. Sub item 2", "\t1. Sub item 3"},
+			expected: "1. First item\n    • Sub item 1\n    1. Sub item 2\n    2. Sub item 3\n",
+		},
+		{
 			name:     "Mixed list (ordered inside unordered)",
 			input:    []string{"- First item", "    1. Sub item 1", "    2. Sub item 2", "- Second item"},
 			expected: "• First item\n    1. Sub item 1\n    2. Sub item 2\n• Second item\n",
