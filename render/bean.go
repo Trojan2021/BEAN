@@ -122,9 +122,7 @@ func RenderMarkdown(lines []string) string {
 		var lineBeginning string
 		var outputString string
 
-		// headers require an extra newline character to break away from paragraphs
 		// determine if following a paragraph
-
 		// begin line with two newline characters if starting a new paragraph following another paragraph
 		if currentLineTrimmed != "" {
 			if prevElements[0] == 255 && prevElements[1] == 0 {
@@ -277,10 +275,10 @@ func RenderMarkdown(lines []string) string {
 				prevListWasOrdered = true
 			}
 
-			// if the previous line is not a list item/header OR if the previous line is blank but the last matched element was not a list item/header,
-			// preceed the list item with a newline character
+			// if the previous line is a paragraph OR if the previous line is blank but the last matched element was not a header
+			// (lists with a gap between them should be treated as separate lists), preceed the list item with a newline character
 			var lineBeginning string
-			if i != 0 && (prevElements[0] != 10 && prevElements[0] != 1) || (prevElements[0] == 255 && (prevElements[1] != 10 && prevElements[1] != 1)) {
+			if i != 0 && ((prevElements[0] == 0) || (prevElements[0] == 255 && prevElements[1] != 1)) {
 				lineBeginning = "\n"
 			}
 

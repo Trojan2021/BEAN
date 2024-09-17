@@ -24,6 +24,11 @@ func TestRenderLists(t *testing.T) {
 			expected: "1. List item\n",
 		},
 		{
+			name:     "Unordered list following header w/different spacing",
+			input:    []string{"# Header 1", "- List item", "# Header 1", "", "- List item", "# Header 1", "", "", "- List item"},
+			expected: "\033[1m\033[4mHeader 1\033[0m\n• List item\n\n\033[1m\033[4mHeader 1\033[0m\n• List item\n\n\033[1m\033[4mHeader 1\033[0m\n• List item\n",
+		},
+		{
 			name:     "Unordered list with multiple items",
 			input:    []string{"- First item", "    - Sub item 1", "    - Sub item 2", "- Second item"},
 			expected: "• First item\n    • Sub item 1\n    • Sub item 2\n• Second item\n",
