@@ -201,14 +201,8 @@ func RenderMarkdown(lines []string) string {
 		// render each matched Markdown element in the current line
 		matchedSomething = false
 		var internalOutput = line // stores the work-in-progress output for the current line
-		if h1.MatchString(internalOutput) {
-			internalOutput = getHeaderBeginning(i) + "\033[1m\033[4m" + h1.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
-			updatePrevElements(1)
-		}
-		if h2.MatchString(internalOutput) {
-			internalOutput = getHeaderBeginning(i) + "\033[1m" + h2.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
-			updatePrevElements(1)
-		}
+
+		// match elements that may be embedded within a paragraph
 		for {
 			if bold.MatchString(internalOutput) { // bold must be rendered first to avoid matching as italic
 				substrings := bold.FindStringSubmatch(internalOutput)
@@ -234,7 +228,15 @@ func RenderMarkdown(lines []string) string {
 				break
 			}
 		}
-		if list.MatchString(internalOutput) {
+
+		// match mutually exclusive elements that may NOT be embedded within a paragraph
+		if h1.MatchString(internalOutput) {
+			internalOutput = getHeaderBeginning(i) + "\033[1m\033[4m" + h1.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
+			updatePrevElements(1)
+		} else if h2.MatchString(internalOutput) {
+			internalOutput = getHeaderBeginning(i) + "\033[1m" + h2.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
+			updatePrevElements(1)
+		} else if list.MatchString(internalOutput) {
 			substrings := list.FindStringSubmatch(internalOutput)
 
 			validMarkdown, indentMultiplier := calcIndentMultiplier(substrings[1])
