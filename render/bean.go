@@ -10,7 +10,6 @@ import (
 )
 
 // TODO General:
-// Fix misnumbering of ordered lists when they follow an unordered list at the same indentation level (only affects child lists)
 // Wrap text to terminal width (or a specified percentage of it); always wrap lists with hanging indentation
 // Optionally support auto-detection of tab (space) width; if compiled to do this, replace indentSpaces with a variable holding the detected value
 
@@ -100,7 +99,6 @@ func RenderMarkdown(lines []string) string {
 	// resetListVariables resets the variables used for list rendering.
 	// It should be called whenever a list is not being rendered (currently headers and paragraphs).
 	resetListVariables := func() {
-		// TODO once lists and paragraphs are made mutually exclusive, simply perform this action whenever not rendering a list
 		prevIndentMultiplier = 0
 		orderedIterator = 1
 		orderedIteratorHistory = nil
@@ -157,15 +155,25 @@ func RenderMarkdown(lines []string) string {
 	}
 
 	// REGEX DICTIONARY
+	// general header
+	header := regexp.MustCompile(`^\s*#{1,6} .*`)
 	// level 1 header (1)
 	h1 := regexp.MustCompile(`^\s*# (.*)`)
-	// level 2 header (2)
+	// level 2 header (1)
 	h2 := regexp.MustCompile(`^\s*## (.*)`)
-	// bold text (7)
+	// level 3 header (1)
+	h3 := regexp.MustCompile(`^\s*### (.*)`)
+	// level 4 header (1)
+	h4 := regexp.MustCompile(`^\s*#### (.*)`)
+	// level 5 header (1)
+	h5 := regexp.MustCompile(`^\s*##### (.*)`)
+	// level 6 header (1)
+	h6 := regexp.MustCompile(`^\s*###### (.*)`)
+	// bold text (0)
 	bold := regexp.MustCompile(`^(.*)(\*\*.+?\*\*|__.+?__)(.*)`)
-	// italic text (8)
+	// italic text (0)
 	italic := regexp.MustCompile(`^(.*)(\*.+?\*|_.+?_)(.*)`)
-	// strikethrough text (9)
+	// strikethrough text (0)
 	strikethrough := regexp.MustCompile(`^(.*)~~(.+?)~~(.*)`)
 	// (un)ordered list item (10)
 	list := regexp.MustCompile(fmt.Sprintf(`^((?:\s{%d})*|\t+)([-+*] |\d+\. )(.*)`, indentSpaces))
@@ -230,13 +238,29 @@ func RenderMarkdown(lines []string) string {
 		}
 
 		// match mutually exclusive elements that may NOT be embedded within a paragraph
-		if h1.MatchString(internalOutput) {
-			internalOutput = getHeaderBeginning(i) + "\033[1m\033[4m" + h1.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
-			updatePrevElements(1)
-		} else if h2.MatchString(internalOutput) {
-			internalOutput = getHeaderBeginning(i) + "\033[1m" + h2.FindStringSubmatch(internalOutput)[1] + "\033[0m\n"
-			updatePrevElements(1)
+		if header.MatchString(internalOutput) {
+			// headers
+			if h1.MatchString(internalOutput) {
+				internalOutput = getHeaderBeginning(i) + "\033[1m─" + h1.FindStringSubmatch(internalOutput)[1] + "─\033[0m\n"
+				updatePrevElements(1)
+			} else if h2.MatchString(internalOutput) {
+				internalOutput = getHeaderBeginning(i) + "\033[1m──" + h2.FindStringSubmatch(internalOutput)[1] + "──\033[0m\n"
+				updatePrevElements(1)
+			} else if h3.MatchString(internalOutput) {
+				internalOutput = getHeaderBeginning(i) + "\033[1m───" + h3.FindStringSubmatch(internalOutput)[1] + "───\033[0m\n"
+				updatePrevElements(1)
+			} else if h4.MatchString(internalOutput) {
+				internalOutput = getHeaderBeginning(i) + "\033[1m────" + h4.FindStringSubmatch(internalOutput)[1] + "────\033[0m\n"
+				updatePrevElements(1)
+			} else if h5.MatchString(internalOutput) {
+				internalOutput = getHeaderBeginning(i) + "\033[1m─────" + h5.FindStringSubmatch(internalOutput)[1] + "─────\033[0m\n"
+				updatePrevElements(1)
+			} else if h6.MatchString(internalOutput) {
+				internalOutput = getHeaderBeginning(i) + "\033[1m──────" + h6.FindStringSubmatch(internalOutput)[1] + "──────\033[0m\n"
+				updatePrevElements(1)
+			}
 		} else if list.MatchString(internalOutput) {
+			// lists
 			substrings := list.FindStringSubmatch(internalOutput)
 
 			validMarkdown, indentMultiplier := calcIndentMultiplier(substrings[1])
