@@ -155,20 +155,8 @@ func RenderMarkdown(lines []string) string {
 	}
 
 	// REGEX DICTIONARY
-	// general header
-	header := regexp.MustCompile(`^\s*#{1,6} .*`)
-	// level 1 header (1)
-	h1 := regexp.MustCompile(`^\s*# (.*)`)
-	// level 2 header (1)
-	h2 := regexp.MustCompile(`^\s*## (.*)`)
-	// level 3 header (1)
-	h3 := regexp.MustCompile(`^\s*### (.*)`)
-	// level 4 header (1)
-	h4 := regexp.MustCompile(`^\s*#### (.*)`)
-	// level 5 header (1)
-	h5 := regexp.MustCompile(`^\s*##### (.*)`)
-	// level 6 header (1)
-	h6 := regexp.MustCompile(`^\s*###### (.*)`)
+	// level 1-6 header (1)
+	header := regexp.MustCompile(`^\s*(#{1,6}) (.*)`)
 	// bold text (0)
 	bold := regexp.MustCompile(`^(.*)(\*\*.+?\*\*|__.+?__)(.*)`)
 	// italic text (0)
@@ -240,25 +228,14 @@ func RenderMarkdown(lines []string) string {
 		// match mutually exclusive elements that may NOT be embedded within a paragraph
 		if header.MatchString(internalOutput) {
 			// headers
-			if h1.MatchString(internalOutput) {
-				internalOutput = getHeaderBeginning(i) + "\033[1m─" + h1.FindStringSubmatch(internalOutput)[1] + "─\033[0m\n"
-				updatePrevElements(1)
-			} else if h2.MatchString(internalOutput) {
-				internalOutput = getHeaderBeginning(i) + "\033[1m──" + h2.FindStringSubmatch(internalOutput)[1] + "──\033[0m\n"
-				updatePrevElements(1)
-			} else if h3.MatchString(internalOutput) {
-				internalOutput = getHeaderBeginning(i) + "\033[1m───" + h3.FindStringSubmatch(internalOutput)[1] + "───\033[0m\n"
-				updatePrevElements(1)
-			} else if h4.MatchString(internalOutput) {
-				internalOutput = getHeaderBeginning(i) + "\033[1m────" + h4.FindStringSubmatch(internalOutput)[1] + "────\033[0m\n"
-				updatePrevElements(1)
-			} else if h5.MatchString(internalOutput) {
-				internalOutput = getHeaderBeginning(i) + "\033[1m─────" + h5.FindStringSubmatch(internalOutput)[1] + "─────\033[0m\n"
-				updatePrevElements(1)
-			} else if h6.MatchString(internalOutput) {
-				internalOutput = getHeaderBeginning(i) + "\033[1m──────" + h6.FindStringSubmatch(internalOutput)[1] + "──────\033[0m\n"
-				updatePrevElements(1)
-			}
+			// determine header level (number of "#" characters at the beginning of the line)
+			// and create a visual representation of the header
+			substrings := header.FindStringSubmatch(internalOutput)
+			headerLevel := len(substrings[1])
+			visual := strings.Repeat("─", headerLevel)
+
+			internalOutput = getHeaderBeginning(i) + "\033[1m" + visual + substrings[2] + visual + "\033[0m\n"
+			updatePrevElements(1)
 		} else if list.MatchString(internalOutput) {
 			// lists
 			substrings := list.FindStringSubmatch(internalOutput)
