@@ -208,8 +208,10 @@ func RenderMarkdown(lines []string) string {
 
 				// temporarily replace in-line code block with \x1f (will be restored later to avoid processing Markdown elements within the code block)
 				internalOutput = substrings[1] + "\x1f" + substrings[3]
+
 				// save rendered in-line code block for later restoration
 				renderedCodeBlocks = append(renderedCodeBlocks, "\033[48;5;238;38;5;1m"+substrings[2]+"\033[0m")
+
 				// do not update prevElements since pCode/bold/italic/strikethrough is part of a paragraph (consider it unmatched so that renderParagraph can handle it properly)
 			} else {
 				break
@@ -241,8 +243,8 @@ func RenderMarkdown(lines []string) string {
 		}
 
 		// restore in-line code blocks
-		for _, codeBlock := range renderedCodeBlocks {
-			internalOutput = strings.Replace(internalOutput, "\x1f", codeBlock, 1)
+		for i := len(renderedCodeBlocks) - 1; i >= 0; i-- {
+			internalOutput = strings.Replace(internalOutput, "\x1f", renderedCodeBlocks[i], 1)
 		}
 
 		// match mutually exclusive elements that may NOT be embedded within a paragraph
