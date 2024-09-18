@@ -26,7 +26,7 @@ func TestRenderLists(t *testing.T) {
 		{
 			name:     "Unordered list following header w/different spacing",
 			input:    []string{"# Header 1", "- List item", "# Header 1", "", "- List item", "# Header 1", "", "", "- List item"},
-			expected: "\033[1m\033[4mHeader 1\033[0m\n• List item\n\n\033[1m\033[4mHeader 1\033[0m\n• List item\n\n\033[1m\033[4mHeader 1\033[0m\n• List item\n",
+			expected: "\033[1m─Header 1─\033[0m\n• List item\n\n\033[1m─Header 1─\033[0m\n• List item\n\n\033[1m─Header 1─\033[0m\n• List item\n",
 		},
 		{
 			name:     "Unordered list with multiple items",
@@ -71,7 +71,7 @@ func TestRenderLists(t *testing.T) {
 		{
 			name:     "Mixed list(s) (unordered AND ordered inside ordered, tab input, separated by headers and spaces)",
 			input:    []string{"1. First item", "\t- Sub item 1", "\t1. Sub item 2", "\t1. Sub item 3", "# Header 1", "1. First item", "\t- Sub item 1", "\t1. Sub item 2", "\t1. Sub item 3", "", "1. First item", "\t- Sub item 1", "\t1. Sub item 2", "\t1. Sub item 3", "1. Second item", "\t- Sub item 1", "\t1. Sub item 2", "\t1. Sub item 3"},
-			expected: "1. First item\n    • Sub item 1\n    1. Sub item 2\n    2. Sub item 3\n\n\033[1m\033[4mHeader 1\033[0m\n1. First item\n    • Sub item 1\n    1. Sub item 2\n    2. Sub item 3\n\n1. First item\n    • Sub item 1\n    1. Sub item 2\n    2. Sub item 3\n2. Second item\n    • Sub item 1\n    1. Sub item 2\n    2. Sub item 3\n",
+			expected: "1. First item\n    • Sub item 1\n    1. Sub item 2\n    2. Sub item 3\n\n\033[1m─Header 1─\033[0m\n1. First item\n    • Sub item 1\n    1. Sub item 2\n    2. Sub item 3\n\n1. First item\n    • Sub item 1\n    1. Sub item 2\n    2. Sub item 3\n2. Second item\n    • Sub item 1\n    1. Sub item 2\n    2. Sub item 3\n",
 		},
 		{
 			name:     "Mixed list (ordered inside unordered)",

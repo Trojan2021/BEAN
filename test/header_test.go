@@ -16,12 +16,32 @@ func TestHeader(t *testing.T) {
 		{
 			name:     "Header level 1",
 			input:    []string{"# Heading 1"},
-			expected: "\033[1m\033[4mHeading 1\033[0m\n",
+			expected: "\033[1m─Heading 1─\033[0m\n",
 		},
 		{
 			name:     "Header level 2",
 			input:    []string{"## Heading 2"},
-			expected: "\033[1mHeading 2\033[0m\n",
+			expected: "\033[1m──Heading 2──\033[0m\n",
+		},
+		{
+			name:     "Header level 3",
+			input:    []string{"### Heading 2"},
+			expected: "\033[1m───Heading 2───\033[0m\n",
+		},
+		{
+			name:     "Header level 4",
+			input:    []string{"#### Heading 2"},
+			expected: "\033[1m────Heading 2────\033[0m\n",
+		},
+		{
+			name:     "Header level 5",
+			input:    []string{"##### Heading 2"},
+			expected: "\033[1m─────Heading 2─────\033[0m\n",
+		},
+		{
+			name:     "Header level 6",
+			input:    []string{"###### Heading 2"},
+			expected: "\033[1m──────Heading 2──────\033[0m\n",
 		},
 	}
 	for _, tt := range tests {
