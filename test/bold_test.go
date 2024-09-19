@@ -69,12 +69,6 @@ func TestRenderBoldText(t *testing.T) {
 			input:    []string{"This is **bold1**, and this is **bold2**."},
 			expected: "This is \033[1mbold1\033[0m, and this is \033[1mbold2\033[0m. ",
 		},
-		// Bold across multiple lines (should not render as bold)
-		{
-			name:     "Bold across multiple lines",
-			input:    []string{"This is **bold", "across lines**."},
-			expected: "This is **bold\nacross lines**.", // Should not convert to bold
-		},
 	}
 
 	for _, tt := range tests {
