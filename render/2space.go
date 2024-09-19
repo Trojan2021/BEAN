@@ -1,5 +1,5 @@
 //go:build 2space
 
-package bean
+package render
 
 const indentSpaces = 2
