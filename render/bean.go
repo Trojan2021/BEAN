@@ -157,6 +157,8 @@ func RenderMarkdown(lines []string) string {
 	// REGEX DICTIONARY
 	// level 1-6 header (1)
 	header := regexp.MustCompile(`^\s*(#{1,6}) (.*)`)
+	// in-line code (paragraph code) (0)
+	pCode := regexp.MustCompile("^(.*)`(.+?)`(.*)")
 	// bold text (0)
 	bold := regexp.MustCompile(`^(.*)(\*\*.+?\*\*|__.+?__)(.*)`)
 	// italic text (0)
@@ -197,13 +199,28 @@ func RenderMarkdown(lines []string) string {
 		// render each matched Markdown element in the current line
 		matchedSomething = false
 		var internalOutput = line // stores the work-in-progress output for the current line
+		var renderedCodeBlocks []string
 
 		// match elements that may be embedded within a paragraph
+		for {
+			if pCode.MatchString(internalOutput) {
+				substrings := pCode.FindStringSubmatch(internalOutput)
+
+				// temporarily replace in-line code block with \x1f (will be restored later to avoid processing Markdown elements within the code block)
+				internalOutput = substrings[1] + "\x1f" + substrings[3]
+
+				// save rendered in-line code block for later restoration
+				renderedCodeBlocks = append(renderedCodeBlocks, "\033[48;5;238;38;5;1m"+substrings[2]+"\033[0m")
+
+				// do not update prevElements since pCode/bold/italic/strikethrough is part of a paragraph (consider it unmatched so that renderParagraph can handle it properly)
+			} else {
+				break
+			}
+		}
 		for {
 			if bold.MatchString(internalOutput) { // bold must be rendered first to avoid matching as italic
 				substrings := bold.FindStringSubmatch(internalOutput)
 				internalOutput = substrings[1] + "\033[1m" + substrings[2][2:len(substrings[2])-2] + "\033[0m" + substrings[3]
-				// do not update prevElements since bold/italic/strikethrough is part of a paragraph (consider it unmatched so that renderParagraph can handle it properly)
 			} else {
 				break
 			}
@@ -223,6 +240,11 @@ func RenderMarkdown(lines []string) string {
 			} else {
 				break
 			}
+		}
+
+		// restore in-line code blocks
+		for i := len(renderedCodeBlocks) - 1; i >= 0; i-- {
+			internalOutput = strings.Replace(internalOutput, "\x1f", renderedCodeBlocks[i], 1)
 		}
 
 		// match mutually exclusive elements that may NOT be embedded within a paragraph
