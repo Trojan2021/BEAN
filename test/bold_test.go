@@ -15,25 +15,29 @@ func TestRenderBoldText(t *testing.T) {
 		// Basic bold text
 		{
 			name:     "Bold text using double asterisks",
-			input:    []string{"This is **bold** text."},
-			expected: "This is \033[1mbold\033[0m text. ",
+			input:    []string{"**bold**"},
+			expected: "\033[1mbold\033[0m ",
 		},
 		{
 			name:     "Bold text using double underscores",
-			input:    []string{"This is __bold__ text."},
-			expected: "This is \033[1mbold\033[0m text. ",
+			input:    []string{"__bold__"},
+			expected: "\033[1mbold\033[0m ",
 		},
-		// Bold within a sentence TODO REMOVE REDUNDANT TEST
+		// Bold within a sentence
 		{
 			name:     "Bold in the middle of sentence",
 			input:    []string{"A sentence with **bold** in the middle."},
 			expected: "A sentence with \033[1mbold\033[0m in the middle. ",
 		},
-		// Bold at the start and end of a sentence
 		{
 			name:     "Bold at the start and end of sentence",
 			input:    []string{"**Bold** at the start, and at the **end**."},
 			expected: "\033[1mBold\033[0m at the start, and at the \033[1mend\033[0m. ",
+		},
+		{
+			name:     "Multiple bold segments in one line (not at start or end)",
+			input:    []string{"This is **bold1**, and this is **bold2** as well."},
+			expected: "This is \033[1mbold1\033[0m, and this is \033[1mbold2\033[0m as well. ",
 		},
 		// Edge cases
 		{
@@ -62,12 +66,6 @@ func TestRenderBoldText(t *testing.T) {
 			name:     "Bold with special characters",
 			input:    []string{"This is **bold & special <chars>** text."},
 			expected: "This is \033[1mbold & special <chars>\033[0m text. ",
-		},
-		// Multiple bold segments in one line TODO REMOVE REDUNDANT TEST
-		{
-			name:     "Multiple bold segments in one line",
-			input:    []string{"This is **bold1**, and this is **bold2**."},
-			expected: "This is \033[1mbold1\033[0m, and this is \033[1mbold2\033[0m. ",
 		},
 		// Bold asterisks and underscores
 		{
