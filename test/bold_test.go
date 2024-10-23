@@ -23,7 +23,7 @@ func TestRenderBoldText(t *testing.T) {
 			input:    []string{"This is __bold__ text."},
 			expected: "This is \033[1mbold\033[0m text. ",
 		},
-		// Bold within a sentence
+		// Bold within a sentence TODO REMOVE REDUNDANT TEST
 		{
 			name:     "Bold in the middle of sentence",
 			input:    []string{"A sentence with **bold** in the middle."},
@@ -39,12 +39,12 @@ func TestRenderBoldText(t *testing.T) {
 		{
 			name:     "Bold with incomplete asterisks (should render italics)",
 			input:    []string{"This is *not fully bold** text."},
-			expected: "This is \033[3mnot fully bold\033[0m* text. ", // Should render as italics
+			expected: "This is \033[3mnot fully bold\033[0m* text. ",
 		},
 		{
 			name:     "Bold with incomplete underscores (should render italics)",
 			input:    []string{"This is _not fully bold__ text."},
-			expected: "This is \033[3mnot fully bold\033[0m_ text. ", // Should render as italics
+			expected: "This is \033[3mnot fully bold\033[0m_ text. ",
 		},
 		// Nested bold with other formatting (italic)
 		{
@@ -63,11 +63,17 @@ func TestRenderBoldText(t *testing.T) {
 			input:    []string{"This is **bold & special <chars>** text."},
 			expected: "This is \033[1mbold & special <chars>\033[0m text. ",
 		},
-		// Multiple bold segments in one line
+		// Multiple bold segments in one line TODO REMOVE REDUNDANT TEST
 		{
 			name:     "Multiple bold segments in one line",
 			input:    []string{"This is **bold1**, and this is **bold2**."},
 			expected: "This is \033[1mbold1\033[0m, and this is \033[1mbold2\033[0m. ",
+		},
+		// Bold asterisks and underscores
+		{
+			name:     "Bold asterisks and underscores in one line",
+			input:    []string{"Bold asterisks (*****) and bold underscores (_____) should be possible."},
+			expected: "Bold asterisks (\033[1m*\033[0m) and bold underscores (\033[1m_\033[0m) should be possible. ",
 		},
 	}
 
