@@ -134,9 +134,13 @@ func RenderMarkdown(lines []string) string {
 			return
 		}
 
-		// begin line with two newline characters if starting a new paragraph following another paragraph
+		// determine if newline characters should be added before the current line
 		if prevElements[0] == 255 && prevElements[1] == 0 {
+			// begin line with two newline characters if starting a new paragraph following another paragraph
 			pBuffer.WriteString("\n\n")
+		} else if prevElements[0] == 10 || (prevElements[0] == 255 && prevElements[1] == 10) {
+			// begin line with a newline character if starting a new paragraph following a list
+			pBuffer.WriteString("\n")
 		}
 
 		if strings.TrimRight(lineInProgress, "  ") != lineInProgress {

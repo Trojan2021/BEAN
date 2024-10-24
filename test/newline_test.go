@@ -48,6 +48,21 @@ func TestNewline(t *testing.T) {
 			expected: "This is a happy little paragraph \n• First item\n• Second item\n    • Sub item 1\n• Third item\n",
 		},
 		{
+			name:     "List followed by a paragraph (minimal spacing)",
+			input:    []string{"- First item", "- Second item", "\t- Sub item 1", "- Third item", "This is a happy little paragraph"},
+			expected: "• First item\n• Second item\n    • Sub item 1\n• Third item\n\nThis is a happy little paragraph ",
+		},
+		{
+			name:     "List followed by a paragraph (standard spacing)",
+			input:    []string{"- First item", "- Second item", "\t- Sub item 1", "- Third item", "", "This is a happy little paragraph"},
+			expected: "• First item\n• Second item\n    • Sub item 1\n• Third item\n\nThis is a happy little paragraph ",
+		},
+		{
+			name:     "List followed by a paragraph (exaggerated spacing)",
+			input:    []string{"- First item", "- Second item", "\t- Sub item 1", "- Third item", "", "", "", "", "", "", "", "", "This is a happy little paragraph"},
+			expected: "• First item\n• Second item\n    • Sub item 1\n• Third item\n\nThis is a happy little paragraph ",
+		},
+		{
 			name:     "Multiple HRs",
 			input:    []string{"___", "---", "***", "***", "", "", "", "___"},
 			expected: strings.Repeat("─", width) + "\n\n" + strings.Repeat("─", width) + "\n\n" + strings.Repeat("─", width) + "\n\n" + strings.Repeat("─", width) + "\n\n" + strings.Repeat("─", width) + "\n\n",
