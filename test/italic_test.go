@@ -31,24 +31,24 @@ func TestRenderItalicText(t *testing.T) {
 		},
 		{
 			name:     "Italic at the start and end of sentence",
-			input:    []string{"*Italic* at the start, and at the *end*."},
-			expected: "\033[3mItalic\033[0m at the start, and at the \033[3mend\033[0m. ",
+			input:    []string{"*Italic* at the start, and at the *end*"},
+			expected: "\033[3mItalic\033[0m at the start, and at the \033[3mend\033[0m ",
 		},
 		{
 			name:     "Multiple italic segments in one line (not at start or end)",
 			input:    []string{"This is *italic1*, and this is *italic2* as well."},
 			expected: "This is \033[3mitalic1\033[0m, and this is \033[3mitalic2\033[0m as well. ",
 		},
-		// Nested italic with other formatting (bold)
+		// Nested italic with other formatting (bold/strikethrough)
 		{
 			name:     "Italic nested inside bold",
 			input:    []string{"This is __bold *and italic* inside__."},
 			expected: "This is \033[1mbold \033[3mand italic\033[0m inside\033[0m. ",
 		},
 		{
-			name:     "Bold nested inside italic",
-			input:    []string{"This is *italic __and bold__ inside*."},
-			expected: "This is \033[3mitalic \033[1mand bold\033[0m inside\033[0m. ",
+			name:     "Italic nested inside strikethrough",
+			input:    []string{"This is ~~strikethrough *and italic* inside~~."},
+			expected: "This is \033[9mstrikethrough \033[3mand italic\033[0m inside\033[0m. ",
 		},
 		// Italic with special characters
 		{

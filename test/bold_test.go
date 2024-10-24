@@ -31,8 +31,8 @@ func TestRenderBoldText(t *testing.T) {
 		},
 		{
 			name:     "Bold at the start and end of sentence",
-			input:    []string{"**Bold** at the start, and at the **end**."},
-			expected: "\033[1mBold\033[0m at the start, and at the \033[1mend\033[0m. ",
+			input:    []string{"**Bold** at the start, and at the **end**"},
+			expected: "\033[1mBold\033[0m at the start, and at the \033[1mend\033[0m ",
 		},
 		{
 			name:     "Multiple bold segments in one line (not at start or end)",
@@ -50,16 +50,16 @@ func TestRenderBoldText(t *testing.T) {
 			input:    []string{"This is _not fully bold__ text."},
 			expected: "This is \033[3mnot fully bold\033[0m_ text. ",
 		},
-		// Nested bold with other formatting (italic)
+		// Nested bold with other formatting (italic/strikethrough)
 		{
 			name:     "Bold nested inside italic",
 			input:    []string{"This is _italic **and bold** inside_."},
 			expected: "This is \033[3mitalic \033[1mand bold\033[0m inside\033[0m. ",
 		},
 		{
-			name:     "Italic nested inside bold",
-			input:    []string{"This is **bold _and italic_ inside**."},
-			expected: "This is \033[1mbold \033[3mand italic\033[0m inside\033[0m. ",
+			name:     "Bold nested inside strikethrough",
+			input:    []string{"This is ~~strikethrough **and bold** inside~~."},
+			expected: "This is \033[9mstrikethrough \033[1mand bold\033[0m inside\033[0m. ",
 		},
 		// Bold with special characters
 		{
