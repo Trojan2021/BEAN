@@ -21,7 +21,9 @@ func ReadFile(fileName string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not read file %s: %v", fileName, err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		_ = file.Close() // error ignored; if the file could be opened, it can probably be closed
+	}(file)
 
 	var lines []string
 	scanner := bufio.NewScanner(file)
@@ -119,7 +121,7 @@ func RenderMarkdown(lines []string) string {
 			return ""
 		}
 
-		// delcare variables to store work-in-progress strings
+		// declare variables to store work-in-progress strings
 		var lineBeginning string
 		var outputString string
 
@@ -175,7 +177,7 @@ func RenderMarkdown(lines []string) string {
 	// level 1-6 header (1)
 	header := regexp.MustCompile(`^\s*(#{1,6}) (.*)`)
 	// horizontal rule (2)
-	hr := regexp.MustCompile(`^(?:[-]{3,}|[*]{3,}|[_]{3,})$`)
+	hr := regexp.MustCompile(`^(?:-{3,}|\*{3,}|_{3,})$`)
 	// in-line code (paragraph code) (0)
 	pCode := regexp.MustCompile("^(.*)`(.+?)`(.*)")
 	// bold text (0)
@@ -204,7 +206,7 @@ func RenderMarkdown(lines []string) string {
 		}
 
 		// headers require only one newline character if the previous element is a list or a header
-		// this is because all list items and headers end in a newline character]
+		// this is because all list items and headers end in a newline character
 		if prevElements[0] == 10 || prevElements[0] == 1 || (prevElements[0] == 255 && (prevElements[1] == 10 || prevElements[1] == 1)) {
 			return "\n"
 		}
@@ -340,7 +342,7 @@ func RenderMarkdown(lines []string) string {
 			}
 
 			// if the previous line is a paragraph OR if the previous line is blank but the last matched element was not a header
-			// (lists with a gap between them should be treated as separate lists), preceed the list item with a newline character
+			// (lists with a gap between them should be treated as separate lists), precede the list item with a newline character
 			var lineBeginning string
 			if i != 0 && ((prevElements[0] == 0) || (prevElements[0] == 255 && prevElements[1] != 1)) {
 				lineBeginning = "\n"
