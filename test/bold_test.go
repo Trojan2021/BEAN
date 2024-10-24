@@ -77,7 +77,7 @@ func TestRenderBoldText(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			output := bean.RenderMarkdown(tt.input)
+			output := bean.RenderMarkdown(tt.input, terminalWidth)
 			if output != tt.expected {
 				bufferFailure(t, output, tt.expected)
 			}

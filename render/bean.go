@@ -9,11 +9,10 @@ import (
 	"strings"
 
 	wrap "github.com/mitchellh/go-wordwrap"
-	"golang.org/x/term"
 )
 
 // TODO General:
-// Wrap text to terminal width (or a specified percentage of it); always wrap lists with hanging indentation
+// Implement wrapping for lists (with hanging indentation)
 // Optionally support auto-detection of tab (space) width; if compiled to do this, replace indentSpaces with a variable holding the detected value
 
 // ReadFile reads the markdown file and returns its lines as a slice of strings.
@@ -40,13 +39,12 @@ func ReadFile(fileName string) ([]string, error) {
 }
 
 // RenderMarkdown renders the input lines as Markdown formatted for the CLI using ANSI escape codes.
-func RenderMarkdown(lines []string) string {
+func RenderMarkdown(lines []string, terminalWidth int) string {
 	// variables to keep value between iterations
 	/// ALL
-	var oBuffer strings.Builder                         // stores the work-in-progress final output string
-	var prevElements [2]uint8                           // stores the integer representation of the last rendered element [0] and the last rendered element different from the most recent [1] (0 = paragraph, 1 = header, 2 = hr, 10 = list item, 255 = none)
-	var matchedSomething bool                           // indicates whether the current line matched any Markdown syntax
-	var width, _, _ = term.GetSize(int(os.Stdout.Fd())) // stores the terminal width
+	var oBuffer strings.Builder // stores the work-in-progress final output string
+	var prevElements [2]uint8   // stores the integer representation of the last rendered element [0] and the last rendered element different from the most recent [1] (0 = paragraph, 1 = header, 2 = hr, 10 = list item, 255 = none)
+	var matchedSomething bool   // indicates whether the current line matched any Markdown syntax
 	/// PARAGRAPHS
 	var pBuffer strings.Builder // stores work-in-progress paragraph text
 	/// LISTS
@@ -116,7 +114,7 @@ func RenderMarkdown(lines []string) string {
 	// mergeBuffers merges the contents of pBuffer (word-wrapped) into oBuffer and resets pBuffer.
 	mergeBuffers := func() {
 		if pBuffer.Len() > 0 {
-			oBuffer.WriteString(wrap.WrapString(pBuffer.String(), uint(width)))
+			oBuffer.WriteString(strings.TrimRight(wrap.WrapString(pBuffer.String(), uint(terminalWidth)), " "))
 			pBuffer.Reset()
 		}
 	}
@@ -298,7 +296,7 @@ func RenderMarkdown(lines []string) string {
 			updatePrevElements(1)
 		} else if hr.MatchString(internalOutput) {
 			// horizontal rule
-			internalOutput = getHeaderBeginning(i) + strings.Repeat("─", width) + "\n\n"
+			internalOutput = getHeaderBeginning(i) + strings.Repeat("─", terminalWidth) + "\n\n"
 			updatePrevElements(2)
 		} else if list.MatchString(internalOutput) {
 			// lists
