@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	wrap "github.com/mitchellh/go-wordwrap"
 	"golang.org/x/term"
 )
 
@@ -112,10 +113,10 @@ func RenderMarkdown(lines []string) string {
 		prevListWasOrdered = false
 	}
 
-	// mergeBuffers merges the contents of pBuffer into oBuffer and resets pBuffer.
+	// mergeBuffers merges the contents of pBuffer (word-wrapped) into oBuffer and resets pBuffer.
 	mergeBuffers := func() {
 		if pBuffer.Len() > 0 {
-			oBuffer.WriteString(pBuffer.String())
+			oBuffer.WriteString(wrap.WrapString(pBuffer.String(), uint(width)))
 			pBuffer.Reset()
 		}
 	}

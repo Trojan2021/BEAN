@@ -35,7 +35,7 @@ func TestHR(t *testing.T) {
 		{
 			name:     "Mixed HR (should render as paragraph)",
 			input:    []string{"_*-"},
-			expected: "_*- ",
+			expected: "_*-",
 		},
 		{
 			name:     "Overkill hyphen HR",
