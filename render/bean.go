@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 // TODO General:
@@ -19,7 +21,9 @@ func ReadFile(fileName string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not read file %s: %v", fileName, err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		_ = file.Close() // error ignored; if the file could be opened, it can probably be closed
+	}(file)
 
 	var lines []string
 	scanner := bufio.NewScanner(file)
@@ -38,9 +42,10 @@ func ReadFile(fileName string) ([]string, error) {
 func RenderMarkdown(lines []string) string {
 	// variables to keep value between iterations
 	/// ALL
-	var output strings.Builder // stores the work-in-progress final output string
-	var prevElements [2]uint8  // stores the integer representation of the last rendered element [0] and the last rendered element different from the most recent [1] (0 = paragraph, 1 = header, 10 = list item, 255 = none)
-	var matchedSomething bool  // indicates whether the current line matched any Markdown syntax
+	var output strings.Builder                          // stores the work-in-progress final output string
+	var prevElements [2]uint8                           // stores the integer representation of the last rendered element [0] and the last rendered element different from the most recent [1] (0 = paragraph, 1 = header, 2 = hr, 10 = list item, 255 = none)
+	var matchedSomething bool                           // indicates whether the current line matched any Markdown syntax
+	var width, _, _ = term.GetSize(int(os.Stdout.Fd())) // stores the terminal width
 	/// LISTS
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	var prevListWasOrdered bool  // stores whether the previous list was ordered
@@ -116,7 +121,7 @@ func RenderMarkdown(lines []string) string {
 			return ""
 		}
 
-		// delcare variables to store work-in-progress strings
+		// declare variables to store work-in-progress strings
 		var lineBeginning string
 		var outputString string
 
@@ -154,9 +159,25 @@ func RenderMarkdown(lines []string) string {
 		return lineBeginning + outputString
 	}
 
+	// containsMultipleUniqueChars returns true if the input string contains multiple unique characters.
+	// It is used to avoid matching horizontal rules as bold/italic paragraphs.
+	containsMultipleUniqueChars := func(s string) bool {
+		charMap := make(map[rune]bool)
+		for _, char := range s {
+			charMap[char] = true
+		}
+		if len(charMap) == 1 {
+			return false
+		} else {
+			return true
+		}
+	}
+
 	// REGEX DICTIONARY
 	// level 1-6 header (1)
 	header := regexp.MustCompile(`^\s*(#{1,6}) (.*)`)
+	// horizontal rule (2)
+	hr := regexp.MustCompile(`^(?:-{3,}|\*{3,}|_{3,})$`)
 	// in-line code (paragraph code) (0)
 	pCode := regexp.MustCompile("^(.*)`(.+?)`(.*)")
 	// bold text (0)
@@ -178,8 +199,14 @@ func RenderMarkdown(lines []string) string {
 			return ""
 		}
 
+		// headers require no newline characters if the previous element is a horizontal rule
+		// this is because horizontal rules always end in two newline characters
+		if prevElements[0] == 2 || (prevElements[0] == 255 && prevElements[1] == 2) {
+			return ""
+		}
+
 		// headers require only one newline character if the previous element is a list or a header
-		// this is because all list items and headers end in a newline character]
+		// this is because all list items and headers end in a newline character
 		if prevElements[0] == 10 || prevElements[0] == 1 || (prevElements[0] == 255 && (prevElements[1] == 10 || prevElements[1] == 1)) {
 			return "\n"
 		}
@@ -219,6 +246,11 @@ func RenderMarkdown(lines []string) string {
 		}
 		for {
 			if bold.MatchString(internalOutput) { // bold must be rendered first to avoid matching as italic
+				// avoid processing horizontal rules as bold text
+				if !containsMultipleUniqueChars(internalOutput) {
+					break
+				}
+
 				substrings := bold.FindStringSubmatch(internalOutput)
 				internalOutput = substrings[1] + "\033[1m" + substrings[2][2:len(substrings[2])-2] + "\033[0m" + substrings[3]
 			} else {
@@ -227,6 +259,11 @@ func RenderMarkdown(lines []string) string {
 		}
 		for {
 			if italic.MatchString(internalOutput) {
+				// avoid processing horizontal rules as italic text
+				if !containsMultipleUniqueChars(internalOutput) {
+					break
+				}
+
 				substrings := italic.FindStringSubmatch(internalOutput)
 				internalOutput = substrings[1] + "\033[3m" + substrings[2][1:len(substrings[2])-1] + "\033[0m" + substrings[3]
 			} else {
@@ -258,6 +295,10 @@ func RenderMarkdown(lines []string) string {
 
 			internalOutput = getHeaderBeginning(i) + "\033[1m" + visual + substrings[2] + visual + "\033[0m\n"
 			updatePrevElements(1)
+		} else if hr.MatchString(internalOutput) {
+			// horizontal rule
+			internalOutput = getHeaderBeginning(i) + strings.Repeat("─", width) + "\n\n"
+			updatePrevElements(2)
 		} else if list.MatchString(internalOutput) {
 			// lists
 			substrings := list.FindStringSubmatch(internalOutput)
@@ -301,7 +342,7 @@ func RenderMarkdown(lines []string) string {
 			}
 
 			// if the previous line is a paragraph OR if the previous line is blank but the last matched element was not a header
-			// (lists with a gap between them should be treated as separate lists), preceed the list item with a newline character
+			// (lists with a gap between them should be treated as separate lists), precede the list item with a newline character
 			var lineBeginning string
 			if i != 0 && ((prevElements[0] == 0) || (prevElements[0] == 255 && prevElements[1] != 1)) {
 				lineBeginning = "\n"
