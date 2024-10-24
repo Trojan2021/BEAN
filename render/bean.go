@@ -42,10 +42,12 @@ func ReadFile(fileName string) ([]string, error) {
 func RenderMarkdown(lines []string) string {
 	// variables to keep value between iterations
 	/// ALL
-	var output strings.Builder                          // stores the work-in-progress final output string
+	var oBuffer strings.Builder                         // stores the work-in-progress final output string
 	var prevElements [2]uint8                           // stores the integer representation of the last rendered element [0] and the last rendered element different from the most recent [1] (0 = paragraph, 1 = header, 2 = hr, 10 = list item, 255 = none)
 	var matchedSomething bool                           // indicates whether the current line matched any Markdown syntax
 	var width, _, _ = term.GetSize(int(os.Stdout.Fd())) // stores the terminal width
+	/// PARAGRAPHS
+	var pBuffer strings.Builder // stores work-in-progress paragraph text
 	/// LISTS
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	var prevListWasOrdered bool  // stores whether the previous list was ordered
@@ -110,46 +112,47 @@ func RenderMarkdown(lines []string) string {
 		prevListWasOrdered = false
 	}
 
-	// renderParagraph returns the input line as a Markdown paragraph-formatted string.
-	renderParagraph := func(lineNumber int, lines *[]string, lineInProgress string) string {
+	// mergeBuffers merges the contents of pBuffer into oBuffer and resets pBuffer.
+	mergeBuffers := func() {
+		if pBuffer.Len() > 0 {
+			oBuffer.WriteString(pBuffer.String())
+			pBuffer.Reset()
+		}
+	}
+
+	// renderParagraph renders the current line as a paragraph by managing pBuffer and oBuffer.
+	renderParagraph := func(lineNumber int, lines *[]string, lineInProgress string) {
 		// trim spaces from current and previous line (later used to determine if they are empty)
 		currentLineTrimmed := strings.TrimSpace(lineInProgress)
 		if currentLineTrimmed == "" {
 			// do not render empty lines; indicate that the previous element did not match any Markdown syntax
 			updatePrevElements(255)
 			resetListVariables() // break lists on empty lines
-			return ""
+
+			// since the current line is empty, a new paragraph is being started and buffers should be merged
+			mergeBuffers()
+			return
 		}
 
-		// declare variables to store work-in-progress strings
-		var lineBeginning string
-		var outputString string
-
-		// determine if following a paragraph
 		// begin line with two newline characters if starting a new paragraph following another paragraph
 		if prevElements[0] == 255 && prevElements[1] == 0 {
-			lineBeginning = "\n\n"
-		} else {
-			// do not begin line with newline character if the previous line is part of the current paragraph
-			lineBeginning = ""
+			pBuffer.WriteString("\n\n")
 		}
 
 		if strings.TrimRight(lineInProgress, "  ") != lineInProgress {
 			// if line ends in two+ spaces, write the line with a newline character
-			outputString = strings.TrimRight(lineInProgress, " ") + "\n"
+			pBuffer.WriteString(strings.TrimRight(lineInProgress, " ") + "\n")
 		} else if strings.HasSuffix(lineInProgress, "<br>") {
 			// if line ends in <br>, write the line with a newline character and strip the <br> tag
-			outputString = lineInProgress[:len(lineInProgress)-4] + "\n"
+			pBuffer.WriteString(lineInProgress[:len(lineInProgress)-4] + "\n")
 		} else {
 			// if line does not contain a manual break, write the line with a space at the end (for paragraph formatting)
-			outputString = lineInProgress + " "
+			pBuffer.WriteString(lineInProgress + " ")
 		}
 
 		resetListVariables()
 
 		updatePrevElements(0) // indicate that the current line is a paragraph (it passed the blank line check)
-
-		return lineBeginning + outputString
 	}
 
 	// containsMultipleUniqueChars returns true if the input string contains multiple unique characters.
@@ -352,11 +355,15 @@ func RenderMarkdown(lines []string) string {
 		// determine whether to render line as paragraph
 		if !matchedSomething {
 			// render as paragraph if no Markdown was matched or if a paragraph was explicitly matched
-			output.WriteString(renderParagraph(i, &lines, internalOutput))
+			renderParagraph(i, &lines, internalOutput)
 		} else {
-			output.WriteString(internalOutput)
+			// since a non-paragraph element was matched, merge pBuffer into oBuffer and reset pBuffer
+			mergeBuffers()
+			oBuffer.WriteString(internalOutput)
 		}
 	}
 
-	return output.String()
+	// in case anything is left in pBuffer at the end, merge it into oBuffer
+	mergeBuffers()
+	return oBuffer.String()
 }
