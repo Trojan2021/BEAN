@@ -115,7 +115,7 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 	// mergeBuffers merges the contents of pBuffer (word-wrapped) into oBuffer and resets pBuffer.
 	mergeBuffers := func() {
 		if pBuffer.Len() > 0 {
-			oBuffer.WriteString(wrap.String(wordwrap.String(strings.TrimRight(pBuffer.String(), " "), terminalWidth), terminalWidth))
+			oBuffer.WriteString(wrap.String(wordwrap.String(pBuffer.String(), terminalWidth), terminalWidth))
 			pBuffer.Reset()
 		}
 	}
