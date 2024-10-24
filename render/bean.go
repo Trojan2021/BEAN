@@ -127,17 +127,10 @@ func RenderMarkdown(lines []string) string {
 
 		// determine if following a paragraph
 		// begin line with two newline characters if starting a new paragraph following another paragraph
-		if currentLineTrimmed != "" {
-			if prevElements[0] == 255 && prevElements[1] == 0 {
-				lineBeginning = "\n\n"
-			} else {
-				// do not begin line with newline character if the previous line is part of the current paragraph
-				lineBeginning = ""
-			}
+		if prevElements[0] == 255 && prevElements[1] == 0 {
+			lineBeginning = "\n\n"
 		} else {
 			// do not begin line with newline character if the previous line is part of the current paragraph
-			// (the previous line is not empty)
-			// or if the current line is empty
 			lineBeginning = ""
 		}
 
@@ -148,7 +141,7 @@ func RenderMarkdown(lines []string) string {
 			// if line ends in <br>, write the line with a newline character and strip the <br> tag
 			outputString = lineInProgress[:len(lineInProgress)-4] + "\n"
 		} else {
-			// if line is not empty, write the line with a space at the end (for paragraph formatting)
+			// if line does not contain a manual break, write the line with a space at the end (for paragraph formatting)
 			outputString = lineInProgress + " "
 		}
 
