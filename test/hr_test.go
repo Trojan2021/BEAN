@@ -52,41 +52,6 @@ func TestHR(t *testing.T) {
 			input:    []string{"__________"},
 			expected: strings.Repeat("─", width) + "\n\n",
 		},
-		{
-			name:     "Multiple HRs",
-			input:    []string{"___", "---", "***", "***"},
-			expected: strings.Repeat("─", width) + "\n\n" + strings.Repeat("─", width) + "\n\n" + strings.Repeat("─", width) + "\n\n" + strings.Repeat("─", width) + "\n\n",
-		},
-		{
-			name:     "HR after paragraph",
-			input:    []string{"This is a paragraph.", "---"},
-			expected: "This is a paragraph. \n\n" + strings.Repeat("─", width) + "\n\n",
-		},
-		{
-			name:     "Paragraph after HR",
-			input:    []string{"---", "This is a paragraph."},
-			expected: strings.Repeat("─", width) + "\n\n" + "This is a paragraph. ",
-		},
-		{
-			name:     "Paragraph after HR (w/blank lines)",
-			input:    []string{"---", "", "", "This is a paragraph."},
-			expected: strings.Repeat("─", width) + "\n\n" + "This is a paragraph. ",
-		},
-		{
-			name:     "HR after header",
-			input:    []string{"# Heading 1", "---"},
-			expected: "\033[1m─Heading 1─\033[0m\n\n" + strings.Repeat("─", width) + "\n\n",
-		},
-		{
-			name:     "Header after HR",
-			input:    []string{"---", "# Heading 1"},
-			expected: strings.Repeat("─", width) + "\n\n" + "\033[1m─Heading 1─\033[0m\n",
-		},
-		{
-			name:     "Header after HR (w/blank lines)",
-			input:    []string{"---", "", "# Heading 1"},
-			expected: strings.Repeat("─", width) + "\n\n" + "\033[1m─Heading 1─\033[0m\n",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

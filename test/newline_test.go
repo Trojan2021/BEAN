@@ -1,18 +1,22 @@
 package test
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	bean "github.com/Trojan2021/BEAN/render"
+	"golang.org/x/term"
 )
 
 func TestNewline(t *testing.T) {
+	width, _, _ := term.GetSize(int(os.Stdout.Fd()))
 	tests := []struct {
 		name     string
 		input    []string
 		expected string
 	}{
-		// New line testing (relationship between headers/list/paragraphs)
+		// New line testing (relationship between headers/HRs/lists/paragraphs)
 		{
 			name:     "Minimal spacing + <br> line break + standard middle paragraph",
 			input:    []string{"- First item", "\t- Sub item 1", "\t- Sub item 2", "- Second item", "# Heading 1", "Paragraph text", "that spans two lines.", "", "New paragraph.", "# Header 1", "__*Fancy*__ paragraph<br>", "with a ~~line break~~."},
@@ -42,6 +46,41 @@ func TestNewline(t *testing.T) {
 			name:     "Paragraph followed by list (exaggerated spacing)",
 			input:    []string{"This is a happy little paragraph", "", "", "", "", "", "", "", "", "- First item", "- Second item", "\t- Sub item 1", "- Third item"},
 			expected: "This is a happy little paragraph \n• First item\n• Second item\n    • Sub item 1\n• Third item\n",
+		},
+		{
+			name:     "Multiple HRs",
+			input:    []string{"___", "---", "***", "***", "", "", "", "___"},
+			expected: strings.Repeat("─", width) + "\n\n" + strings.Repeat("─", width) + "\n\n" + strings.Repeat("─", width) + "\n\n" + strings.Repeat("─", width) + "\n\n" + strings.Repeat("─", width) + "\n\n",
+		},
+		{
+			name:     "HR after paragraph",
+			input:    []string{"This is a paragraph.", "---"},
+			expected: "This is a paragraph. \n\n" + strings.Repeat("─", width) + "\n\n",
+		},
+		{
+			name:     "Paragraph after HR",
+			input:    []string{"---", "This is a paragraph."},
+			expected: strings.Repeat("─", width) + "\n\n" + "This is a paragraph. ",
+		},
+		{
+			name:     "Paragraph after HR (w/blank lines)",
+			input:    []string{"---", "", "", "This is a paragraph."},
+			expected: strings.Repeat("─", width) + "\n\n" + "This is a paragraph. ",
+		},
+		{
+			name:     "HR after header",
+			input:    []string{"# Heading 1", "---"},
+			expected: "\033[1m─Heading 1─\033[0m\n\n" + strings.Repeat("─", width) + "\n\n",
+		},
+		{
+			name:     "Header after HR",
+			input:    []string{"---", "# Heading 1"},
+			expected: strings.Repeat("─", width) + "\n\n" + "\033[1m─Heading 1─\033[0m\n",
+		},
+		{
+			name:     "Header after HR (w/blank lines)",
+			input:    []string{"---", "", "# Heading 1"},
+			expected: strings.Repeat("─", width) + "\n\n" + "\033[1m─Heading 1─\033[0m\n",
 		},
 	}
 	for _, tt := range tests {
