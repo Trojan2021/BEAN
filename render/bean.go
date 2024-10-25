@@ -130,7 +130,7 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 	}
 
 	// renderParagraph renders the current line as a paragraph by managing pBuffer and oBuffer.
-	renderParagraph := func(lineNumber int, lines *[]string, lineInProgress string) {
+	renderParagraph := func(lineInProgress string) {
 		// trim spaces from current and previous line (later used to determine if they are empty)
 		currentLineTrimmed := strings.TrimSpace(lineInProgress)
 		if currentLineTrimmed == "" {
@@ -390,7 +390,7 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 		// determine whether to render line as paragraph
 		if !matchedSomething {
 			// render as paragraph if no Markdown was matched or if a paragraph was explicitly matched
-			renderParagraph(i, &lines, internalOutput)
+			renderParagraph(internalOutput)
 		} else {
 			// since a non-paragraph element was matched, merge pBuffer into oBuffer and reset pBuffer
 			mergeBuffers()
