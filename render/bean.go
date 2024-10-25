@@ -18,7 +18,6 @@ import (
 //
 // TODO Lists:
 // Alternate between typical numbering and roman numerals for ordered lists
-// Alternate between closed and open bullets for unordered lists
 //
 // TODO Missing Elements:
 // Multi-line code blocks (w/syntax highlighting)
@@ -323,7 +322,11 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 			switch substrings[2][0] {
 			case '-', '+', '*':
 				// operations to take for unordered lists
-				bullet = "• "
+				if indentMultiplier%2 == 0 {
+					bullet = "• "
+				} else {
+					bullet = "‣ "
+				}
 
 				if substrings[1] == "" {
 					// if the item is an unordered list parent, reset the orderedIterator and its history
