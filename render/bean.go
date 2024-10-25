@@ -341,11 +341,17 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 				prevListWasOrdered = true
 			}
 
-			// if the previous line is a paragraph OR if the previous line is blank but the last matched element was not a header
-			// (lists with a gap between them should be treated as separate lists), precede the list item with a newline character
+			// determine how many new lines to preceed list with
 			var lineBeginning string
-			if i != 0 && ((prevElements[0] == 0) || (prevElements[0] == 255 && prevElements[1] != 1)) {
-				lineBeginning = "\n"
+			if i != 0 {
+				if prevElements[0] == 255 && prevElements[1] == 0 {
+					// preceed the list with two newline characters if it follows a paragraph that is separated by blank lines
+					lineBeginning = "\n\n"
+				} else if prevElements[0] == 0 || (prevElements[0] == 255 && prevElements[1] == 10) {
+					// preceed the list with one newline character if it follows another list that is separated by blank lines
+					// OR if it directly follows a paragraph
+					lineBeginning = "\n"
+				}
 			}
 
 			// write the list item with the appropriate indentation

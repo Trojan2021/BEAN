@@ -35,14 +35,14 @@ func TestNewline(t *testing.T) {
 			expected: "This is a happy little paragraph\n• First item\n• Second item\n    • Sub item 1\n• Third item\n",
 		},
 		{
-			name:     "Paragraph followed by list (standard spacing)",
+			name:     "Paragraph followed by list (standard spacing; the empty line should be preserved in this case)",
 			input:    []string{"This is a happy little paragraph", "", "- First item", "- Second item", "\t- Sub item 1", "- Third item"},
-			expected: "This is a happy little paragraph\n• First item\n• Second item\n    • Sub item 1\n• Third item\n",
+			expected: "This is a happy little paragraph\n\n• First item\n• Second item\n    • Sub item 1\n• Third item\n",
 		},
 		{
-			name:     "Paragraph followed by list (exaggerated spacing)",
+			name:     "Paragraph followed by list (exaggerated spacing; one empty line should be preserved in this case)",
 			input:    []string{"This is a happy little paragraph", "", "", "", "", "", "", "", "", "- First item", "- Second item", "\t- Sub item 1", "- Third item"},
-			expected: "This is a happy little paragraph\n• First item\n• Second item\n    • Sub item 1\n• Third item\n",
+			expected: "This is a happy little paragraph\n\n• First item\n• Second item\n    • Sub item 1\n• Third item\n",
 		},
 		{
 			name:     "List followed by a paragraph (minimal spacing)",
