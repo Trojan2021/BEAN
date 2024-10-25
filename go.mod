@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/muesli/reflow v0.3.0
-	github.com/rwinkhart/convertroman v0.0.0-20241025192642-e5078a53b434
+	github.com/rwinkhart/convertroman v0.1.0
 )
 
 require (

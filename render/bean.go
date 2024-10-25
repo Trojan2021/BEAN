@@ -358,8 +358,7 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 				if indentMultiplier%2 == 0 {
 					bullet = strconv.Itoa(orderedIterator) + ". "
 				} else {
-					bullet, _ = convertroman.FromInt(orderedIterator)
-					bullet += ". "
+					bullet = convertroman.FromInt(orderedIterator) + ". "
 				}
 
 				prevListWasOrdered = true

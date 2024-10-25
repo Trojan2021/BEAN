@@ -6,7 +6,7 @@ import (
 	bean "github.com/Trojan2021/BEAN/render"
 )
 
-func TestRenderStrikethroughText(t *testing.T) {
+func TestStrikethroughText(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    []string
