@@ -19,6 +19,11 @@ func TestLists(t *testing.T) {
 			expected: "• List item\n",
 		},
 		{
+			name:     "Invalid unordered list followed by additional content",
+			input:    []string{"- List item", "        - Invalid sub item that is long enough to demonstrate that text wrapping works on invalid list items", "# Heading 1", "Test paragraph."},
+			expected: "• List item\n\n        - Invalid sub item that is long enough to demonstrate that text wrapping\nworks on invalid list items\n\n\033[1m─Heading 1─\033[0m\nTest paragraph.",
+		},
+		{
 			name:     "Deep unordered list",
 			input:    []string{"- List item", "    - Sub item 1", "        - Sub item 2", "            - Sub item 3", "                - Sub item 4", "                    - Sub item 5", "                        - Sub item 6", "                            - Sub item 7", "                                - Sub item 8", "                                    - Sub item 9", "                                    - Sub item 9", "                                    - Sub item 9", "                                    - Sub item 9", "                                        - Sub item 10", "                                        - Sub item 10", "                                        - Sub item 10", "                                        - Sub item 10"},
 			expected: "• List item\n    ‣ Sub item 1\n        • Sub item 2\n            ‣ Sub item 3\n                • Sub item 4\n                    ‣ Sub item 5\n                        • Sub item 6\n                            ‣ Sub item 7\n                                • Sub item 8\n                                    ‣ Sub item 9\n                                    ‣ Sub item 9\n                                    ‣ Sub item 9\n                                    ‣ Sub item 9\n                                        • Sub item 10\n                                        • Sub item 10\n                                        • Sub item 10\n                                        • Sub item 10\n",
@@ -27,6 +32,11 @@ func TestLists(t *testing.T) {
 			name:     "Ordered list",
 			input:    []string{"1. List item"},
 			expected: "1. List item\n",
+		},
+		{
+			name:     "Invalid ordered list followed by additional content",
+			input:    []string{"5. List item", "        5. Invalid sub item that is long enough to demonstrate that text wrapping works on invalid list items", "# Heading 1", "Test paragraph."},
+			expected: "1. List item\n\n        5. Invalid sub item that is long enough to demonstrate that text\nwrapping works on invalid list items\n\n\033[1m─Heading 1─\033[0m\nTest paragraph.",
 		},
 		{
 			name:     "Deep ordered list",

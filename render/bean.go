@@ -16,9 +16,7 @@ import (
 // TODO General:
 // Optionally support auto-detection of tab (space) width; if compiled to do this, replace indentSpaces with a variable holding the detected value
 // Optionally support an additional pass over the fully joined string to find bold/italic/strikethrough/in-line code elements that span multiple lines
-//
-// TODO Lists:
-// Alternate between typical numbering and roman numerals for ordered lists
+// Optionally support basic theming by setting variables in a global struct
 //
 // TODO Missing Elements:
 // Multi-line code blocks (w/syntax highlighting)
@@ -314,10 +312,13 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 			// lists
 			substrings := list.FindStringSubmatch(internalOutput)
 
+			// stores newline characters to begin list item with; declared early to accommodate goto statement
+			var lineBeginning string
+
 			validMarkdown, indentMultiplier := calcIndentMultiplier(substrings[1])
 			if !validMarkdown {
-				// do nothing (do not process as list item)
-				break
+				// process as a paragraph if the list item is not valid
+				goto end
 			}
 
 			switch substrings[2][0] {
@@ -365,7 +366,6 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 			}
 
 			// determine how many new lines to precede list with
-			var lineBeginning string
 			if i != 0 {
 				if prevElements[0] == 255 && prevElements[1] == 0 {
 					// precede the list with two newline characters if it follows a paragraph that is separated by blank lines
@@ -383,6 +383,8 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 			// supply information for next line iteration
 			prevIndentMultiplier = indentMultiplier
 			updatePrevElements(10)
+
+		end: // label to skip to if list item is invalid (to avoid matching item as list so it may be rendered as a paragraph)
 		}
 
 		// determine whether to render line as paragraph
