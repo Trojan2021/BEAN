@@ -6,7 +6,7 @@ import (
 )
 
 // specify a consistent terminal width for testing
-var terminalWidth = 80
+const terminalWidth = 80
 
 // bufferFailure adds a literal and an ANSI-interpreted representation of a failed test case to the log buffer.
 func bufferFailure(t *testing.T, got, want string) {
