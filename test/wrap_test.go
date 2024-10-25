@@ -68,6 +68,11 @@ func TestTextWrapping(t *testing.T) {
 			input:    []string{"This is a fairly long paragraph that was input by  ", "the user and should be wrapped uniquely since the manual break occurs before the terminal width."},
 			expected: "This is a fairly long paragraph that was input by\nthe user and should be wrapped uniquely since the manual break occurs before the\nterminal width.",
 		},
+		{
+			name:     "Mixed list w/long items that should wrap",
+			input:    []string{"- First item", "\t1. Sub item 1", "\t2. Sub item 2 is really quite long gee I wonder if this will wrap correctly to the next line it sure would be nice if it did", "- Second item is also really long to prove that unindented list items can also wrap in the same way as indented ones"},
+			expected: "• First item\n    1. Sub item 1\n    2. Sub item 2\n• Second item\n",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

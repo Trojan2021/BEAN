@@ -349,7 +349,7 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 			}
 
 			// write the list item with the appropriate indentation
-			internalOutput = lineBeginning + strings.Repeat(" ", indentMultiplier*4) + bullet + substrings[3] + "\n"
+			internalOutput = lineBeginning + strings.ReplaceAll(wrap.String(wordwrap.String(strings.Repeat(" ", indentMultiplier*4)+bullet+substrings[3], terminalWidth), terminalWidth), "\n", "\n  "+strings.Repeat(" ", indentMultiplier*4)) + "\n"
 
 			// supply information for next line iteration
 			prevIndentMultiplier = indentMultiplier
