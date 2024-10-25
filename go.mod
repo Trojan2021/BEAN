@@ -2,7 +2,10 @@ module github.com/Trojan2021/BEAN
 
 go 1.23.0
 
-require github.com/muesli/reflow v0.3.0
+require (
+	github.com/muesli/reflow v0.3.0
+	github.com/rwinkhart/convertroman v0.0.0-20241025192642-e5078a53b434
+)
 
 require (
 	github.com/mattn/go-runewidth v0.0.12 // indirect

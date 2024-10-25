@@ -10,6 +10,7 @@ import (
 
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/muesli/reflow/wrap"
+	"github.com/rwinkhart/convertroman"
 )
 
 // TODO General:
@@ -322,6 +323,8 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 			switch substrings[2][0] {
 			case '-', '+', '*':
 				// operations to take for unordered lists
+
+				// determine the bullet character based on the indentation level
 				if indentMultiplier%2 == 0 {
 					bullet = "• "
 				} else {
@@ -350,7 +353,14 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 					// otherwise, update the history of ordered list iterators
 					updateOrderedIteratorHistory(indentMultiplier)
 				}
-				bullet = strconv.Itoa(orderedIterator) + ". "
+
+				// determine numbering type based on the indentation level
+				if indentMultiplier%2 == 0 {
+					bullet = strconv.Itoa(orderedIterator) + ". "
+				} else {
+					bullet, _ = convertroman.FromInt(orderedIterator)
+					bullet += ". "
+				}
 
 				prevListWasOrdered = true
 			}

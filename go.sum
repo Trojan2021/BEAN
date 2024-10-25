@@ -5,3 +5,5 @@ github.com/muesli/reflow v0.3.0/go.mod h1:pbwTDkVPibjO2kyvBQRBxTWEEGDGq0FlB1BIKt
 github.com/rivo/uniseg v0.1.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
 github.com/rivo/uniseg v0.2.0 h1:S1pD9weZBuJdFmowNwbpi7BJ8TNftyUImj/0WQi72jY=
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
+github.com/rwinkhart/convertroman v0.0.0-20241025192642-e5078a53b434 h1:oMo9JI/uCNA8Q7PxeoyRFEr461UkYm8TfzGsBvbNUSE=
+github.com/rwinkhart/convertroman v0.0.0-20241025192642-e5078a53b434/go.mod h1:TxZgGaRXk/O16fHLckJmXhPnxOxbZMTvm4magvo8DS8=
