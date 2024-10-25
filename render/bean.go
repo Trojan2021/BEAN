@@ -8,11 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	"golang.org/x/term"
+	"github.com/muesli/reflow/wordwrap"
+	"github.com/muesli/reflow/wrap"
 )
 
 // TODO General:
-// Wrap text to terminal width (or a specified percentage of it); always wrap lists with hanging indentation
+// Implement wrapping for lists (with hanging indentation)
 // Optionally support auto-detection of tab (space) width; if compiled to do this, replace indentSpaces with a variable holding the detected value
 
 // ReadFile reads the markdown file and returns its lines as a slice of strings.
@@ -39,13 +40,14 @@ func ReadFile(fileName string) ([]string, error) {
 }
 
 // RenderMarkdown renders the input lines as Markdown formatted for the CLI using ANSI escape codes.
-func RenderMarkdown(lines []string) string {
+func RenderMarkdown(lines []string, terminalWidth int) string {
 	// variables to keep value between iterations
 	/// ALL
-	var output strings.Builder                          // stores the work-in-progress final output string
-	var prevElements [2]uint8                           // stores the integer representation of the last rendered element [0] and the last rendered element different from the most recent [1] (0 = paragraph, 1 = header, 2 = hr, 10 = list item, 255 = none)
-	var matchedSomething bool                           // indicates whether the current line matched any Markdown syntax
-	var width, _, _ = term.GetSize(int(os.Stdout.Fd())) // stores the terminal width
+	var oBuffer strings.Builder // stores the work-in-progress final output string
+	var prevElements [2]uint8   // stores the integer representation of the last rendered element [0] and the last rendered element different from the most recent [1] (0 = paragraph, 1 = header, 2 = hr, 10 = list item, 255 = none)
+	var matchedSomething bool   // indicates whether the current line matched any Markdown syntax
+	/// PARAGRAPHS
+	var pBuffer strings.Builder // stores work-in-progress paragraph text
 	/// LISTS
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	var prevListWasOrdered bool  // stores whether the previous list was ordered
@@ -110,53 +112,51 @@ func RenderMarkdown(lines []string) string {
 		prevListWasOrdered = false
 	}
 
-	// renderParagraph returns the input line as a Markdown paragraph-formatted string.
-	renderParagraph := func(lineNumber int, lines *[]string, lineInProgress string) string {
+	// mergeBuffers merges the contents of pBuffer (word-wrapped) into oBuffer and resets pBuffer.
+	mergeBuffers := func() {
+		if pBuffer.Len() > 0 {
+			oBuffer.WriteString(wrap.String(wordwrap.String(pBuffer.String(), terminalWidth), terminalWidth))
+			pBuffer.Reset()
+		}
+	}
+
+	// renderParagraph renders the current line as a paragraph by managing pBuffer and oBuffer.
+	renderParagraph := func(lineNumber int, lines *[]string, lineInProgress string) {
 		// trim spaces from current and previous line (later used to determine if they are empty)
 		currentLineTrimmed := strings.TrimSpace(lineInProgress)
 		if currentLineTrimmed == "" {
 			// do not render empty lines; indicate that the previous element did not match any Markdown syntax
 			updatePrevElements(255)
 			resetListVariables() // break lists on empty lines
-			return ""
+
+			// since the current line is empty, a new paragraph is being started and buffers should be merged
+			mergeBuffers()
+			return
 		}
 
-		// declare variables to store work-in-progress strings
-		var lineBeginning string
-		var outputString string
-
-		// determine if following a paragraph
-		// begin line with two newline characters if starting a new paragraph following another paragraph
-		if currentLineTrimmed != "" {
-			if prevElements[0] == 255 && prevElements[1] == 0 {
-				lineBeginning = "\n\n"
-			} else {
-				// do not begin line with newline character if the previous line is part of the current paragraph
-				lineBeginning = ""
-			}
-		} else {
-			// do not begin line with newline character if the previous line is part of the current paragraph
-			// (the previous line is not empty)
-			// or if the current line is empty
-			lineBeginning = ""
+		// determine if newline characters should be added before the current line
+		if prevElements[0] == 255 && prevElements[1] == 0 {
+			// begin line with two newline characters if starting a new paragraph following another paragraph
+			pBuffer.WriteString("\n\n")
+		} else if prevElements[0] == 10 || (prevElements[0] == 255 && prevElements[1] == 10) {
+			// begin line with a newline character if starting a new paragraph following a list
+			pBuffer.WriteString("\n")
 		}
 
 		if strings.TrimRight(lineInProgress, "  ") != lineInProgress {
 			// if line ends in two+ spaces, write the line with a newline character
-			outputString = strings.TrimRight(lineInProgress, " ") + "\n"
+			pBuffer.WriteString(strings.TrimRight(lineInProgress, " ") + "\n")
 		} else if strings.HasSuffix(lineInProgress, "<br>") {
 			// if line ends in <br>, write the line with a newline character and strip the <br> tag
-			outputString = lineInProgress[:len(lineInProgress)-4] + "\n"
+			pBuffer.WriteString(lineInProgress[:len(lineInProgress)-4] + "\n")
 		} else {
-			// if line is not empty, write the line with a space at the end (for paragraph formatting)
-			outputString = lineInProgress + " "
+			// if line does not contain a manual break, write the line with a space at the end (for paragraph formatting)
+			pBuffer.WriteString(lineInProgress + " ")
 		}
 
 		resetListVariables()
 
 		updatePrevElements(0) // indicate that the current line is a paragraph (it passed the blank line check)
-
-		return lineBeginning + outputString
 	}
 
 	// containsMultipleUniqueChars returns true if the input string contains multiple unique characters.
@@ -297,7 +297,7 @@ func RenderMarkdown(lines []string) string {
 			updatePrevElements(1)
 		} else if hr.MatchString(internalOutput) {
 			// horizontal rule
-			internalOutput = getHeaderBeginning(i) + strings.Repeat("─", width) + "\n\n"
+			internalOutput = getHeaderBeginning(i) + strings.Repeat("─", terminalWidth) + "\n\n"
 			updatePrevElements(2)
 		} else if list.MatchString(internalOutput) {
 			// lists
@@ -341,15 +341,21 @@ func RenderMarkdown(lines []string) string {
 				prevListWasOrdered = true
 			}
 
-			// if the previous line is a paragraph OR if the previous line is blank but the last matched element was not a header
-			// (lists with a gap between them should be treated as separate lists), precede the list item with a newline character
+			// determine how many new lines to precede list with
 			var lineBeginning string
-			if i != 0 && ((prevElements[0] == 0) || (prevElements[0] == 255 && prevElements[1] != 1)) {
-				lineBeginning = "\n"
+			if i != 0 {
+				if prevElements[0] == 255 && prevElements[1] == 0 {
+					// precede the list with two newline characters if it follows a paragraph that is separated by blank lines
+					lineBeginning = "\n\n"
+				} else if prevElements[0] == 0 || (prevElements[0] == 255 && prevElements[1] == 10) {
+					// precede the list with one newline character if it follows another list that is separated by blank lines
+					// OR if it directly follows a paragraph
+					lineBeginning = "\n"
+				}
 			}
 
 			// write the list item with the appropriate indentation
-			internalOutput = lineBeginning + strings.Repeat(" ", indentMultiplier*4) + bullet + substrings[3] + "\n"
+			internalOutput = lineBeginning + strings.ReplaceAll(wrap.String(wordwrap.String(strings.Repeat(" ", indentMultiplier*4)+bullet+substrings[3], terminalWidth), terminalWidth), "\n", "\n  "+strings.Repeat(" ", indentMultiplier*4)) + "\n"
 
 			// supply information for next line iteration
 			prevIndentMultiplier = indentMultiplier
@@ -359,11 +365,15 @@ func RenderMarkdown(lines []string) string {
 		// determine whether to render line as paragraph
 		if !matchedSomething {
 			// render as paragraph if no Markdown was matched or if a paragraph was explicitly matched
-			output.WriteString(renderParagraph(i, &lines, internalOutput))
+			renderParagraph(i, &lines, internalOutput)
 		} else {
-			output.WriteString(internalOutput)
+			// since a non-paragraph element was matched, merge pBuffer into oBuffer and reset pBuffer
+			mergeBuffers()
+			oBuffer.WriteString(internalOutput)
 		}
 	}
 
-	return output.String()
+	// in case anything is left in pBuffer at the end, merge it into oBuffer
+	mergeBuffers()
+	return oBuffer.String()
 }
