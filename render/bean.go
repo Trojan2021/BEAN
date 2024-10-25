@@ -13,8 +13,19 @@ import (
 )
 
 // TODO General:
-// Implement wrapping for lists (with hanging indentation)
 // Optionally support auto-detection of tab (space) width; if compiled to do this, replace indentSpaces with a variable holding the detected value
+// Optionally support an additional pass over the fully joined string to find bold/italic/strikethrough/in-line code elements that span multiple lines
+//
+// TODO Lists:
+// Alternate between typical numbering and roman numerals for ordered lists
+// Alternate between closed and open bullets for unordered lists
+//
+// TODO Missing Elements:
+// Multi-line code blocks (w/syntax highlighting)
+// Definitions
+// Links
+// Images
+// Tables
 
 // ReadFile reads the markdown file and returns its lines as a slice of strings.
 func ReadFile(fileName string) ([]string, error) {
