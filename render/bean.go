@@ -8,8 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/muesli/reflow/wordwrap"
-	"github.com/muesli/reflow/wrap"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rwinkhart/convertroman"
 )
 
@@ -124,7 +123,7 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 	// mergeBuffers merges the contents of pBuffer (word-wrapped) into oBuffer and resets pBuffer.
 	mergeBuffers := func() {
 		if pBuffer.Len() > 0 {
-			oBuffer.WriteString(wrap.String(wordwrap.String(pBuffer.String(), terminalWidth), terminalWidth))
+			oBuffer.WriteString(ansi.Wrap(pBuffer.String(), terminalWidth, ""))
 			pBuffer.Reset()
 		}
 	}
@@ -378,7 +377,7 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 			}
 
 			// write the list item with the appropriate indentation
-			internalOutput = lineBeginning + strings.ReplaceAll(wrap.String(wordwrap.String(strings.Repeat(" ", indentMultiplier*4)+bullet+substrings[3], terminalWidth), terminalWidth), "\n", "\n  "+strings.Repeat(" ", indentMultiplier*4)) + "\n"
+			internalOutput = lineBeginning + strings.ReplaceAll(ansi.Wrap(strings.Repeat(" ", indentMultiplier*4)+bullet+substrings[3], terminalWidth, ""), "\n", "\n  "+strings.Repeat(" ", indentMultiplier*4)) + "\n"
 
 			// supply information for next line iteration
 			prevIndentMultiplier = indentMultiplier

@@ -74,7 +74,8 @@ func TestTextWrapping(t *testing.T) {
 			expected: "• First item\n    i. Sub item 1\n    ii. Sub item 2 is really quite long gee I wonder if this will wrap correctly\n      to the next line it sure would be nice if it did\n• Second item is also really long to prove that unindented list items can also\n  wrap in the same way as indented ones\n",
 		},
 		{
-			name:     "Known bug: Incorrect wrapping with preceding spaces",
+			// Previous bug: fixed by switching from reflow to github.com/charmbracelet/x/ansi
+			name:     "Invalid unordered list item that should wrap",
 			input:    []string{"        - Invalid sub item that is loong enough to demonstrate that text wrapping works on invalid list items"},
 			expected: "        - Invalid sub item that is loong enough to demonstrate that text\nwrapping works on invalid list items",
 		},
