@@ -316,74 +316,72 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 
 			validMarkdown, indentMultiplier := calcIndentMultiplier(substrings[1])
 			if !validMarkdown {
-				// process as a paragraph if the list item is not valid
-				goto end
-			}
+				// the list item is invalid; skip list processing
+			} else {
+				// the list item is valid; proceed with list processing
+				switch substrings[2][0] {
+				case '-', '+', '*':
+					// operations to take for unordered lists
 
-			switch substrings[2][0] {
-			case '-', '+', '*':
-				// operations to take for unordered lists
-
-				// determine the bullet character based on the indentation level
-				if indentMultiplier%2 == 0 {
-					bullet = "• "
-				} else {
-					bullet = "‣ "
-				}
-
-				if substrings[1] == "" {
-					// if the item is an unordered list parent, reset the orderedIterator and its history
-					orderedIterator = 1
-					orderedIteratorHistory = nil
-				} else if indentMultiplier != prevIndentMultiplier {
-					// otherwise, if changing the indentation level, update the history of ordered list iterators
-					// must be done for compatibility with mixed ordered/unordered lists
-					updateOrderedIteratorHistory(indentMultiplier)
-				}
-
-				prevListWasOrdered = false
-			default:
-				// operations to take for ordered lists
-				if indentMultiplier == prevIndentMultiplier {
-					// if not changing the indentation level, increment the iterator
-					if prevListWasOrdered {
-						orderedIterator++
+					// determine the bullet character based on the indentation level
+					if indentMultiplier%2 == 0 {
+						bullet = "• "
+					} else {
+						bullet = "‣ "
 					}
-				} else {
-					// otherwise, update the history of ordered list iterators
-					updateOrderedIteratorHistory(indentMultiplier)
+
+					if substrings[1] == "" {
+						// if the item is an unordered list parent, reset the orderedIterator and its history
+						orderedIterator = 1
+						orderedIteratorHistory = nil
+					} else if indentMultiplier != prevIndentMultiplier {
+						// otherwise, if changing the indentation level, update the history of ordered list iterators
+						// must be done for compatibility with mixed ordered/unordered lists
+						updateOrderedIteratorHistory(indentMultiplier)
+					}
+
+					prevListWasOrdered = false
+				default:
+					// operations to take for ordered lists
+					if indentMultiplier == prevIndentMultiplier {
+						// if not changing the indentation level, increment the iterator
+						if prevListWasOrdered {
+							orderedIterator++
+						}
+					} else {
+						// otherwise, update the history of ordered list iterators
+						updateOrderedIteratorHistory(indentMultiplier)
+					}
+
+					// determine numbering type based on the indentation level
+					if indentMultiplier%2 == 0 {
+						bullet = strconv.Itoa(orderedIterator) + ". "
+					} else {
+						bullet = convertroman.FromInt(orderedIterator) + ". "
+					}
+
+					prevListWasOrdered = true
 				}
 
-				// determine numbering type based on the indentation level
-				if indentMultiplier%2 == 0 {
-					bullet = strconv.Itoa(orderedIterator) + ". "
-				} else {
-					bullet = convertroman.FromInt(orderedIterator) + ". "
+				// determine how many new lines to precede list with
+				if i != 0 {
+					if prevElements[0] == 255 && prevElements[1] == 0 {
+						// precede the list with two newline characters if it follows a paragraph that is separated by blank lines
+						lineBeginning = "\n\n"
+					} else if prevElements[0] == 0 || (prevElements[0] == 255 && prevElements[1] == 10) {
+						// precede the list with one newline character if it follows another list that is separated by blank lines
+						// OR if it directly follows a paragraph
+						lineBeginning = "\n"
+					}
 				}
 
-				prevListWasOrdered = true
+				// write the list item with the appropriate indentation
+				internalOutput = lineBeginning + strings.ReplaceAll(ansi.Wrap(strings.Repeat(" ", indentMultiplier*4)+bullet+substrings[3], terminalWidth, ""), "\n", "\n  "+strings.Repeat(" ", indentMultiplier*4)) + "\n"
+
+				// supply information for next line iteration
+				prevIndentMultiplier = indentMultiplier
+				updatePrevElements(10)
 			}
-
-			// determine how many new lines to precede list with
-			if i != 0 {
-				if prevElements[0] == 255 && prevElements[1] == 0 {
-					// precede the list with two newline characters if it follows a paragraph that is separated by blank lines
-					lineBeginning = "\n\n"
-				} else if prevElements[0] == 0 || (prevElements[0] == 255 && prevElements[1] == 10) {
-					// precede the list with one newline character if it follows another list that is separated by blank lines
-					// OR if it directly follows a paragraph
-					lineBeginning = "\n"
-				}
-			}
-
-			// write the list item with the appropriate indentation
-			internalOutput = lineBeginning + strings.ReplaceAll(ansi.Wrap(strings.Repeat(" ", indentMultiplier*4)+bullet+substrings[3], terminalWidth, ""), "\n", "\n  "+strings.Repeat(" ", indentMultiplier*4)) + "\n"
-
-			// supply information for next line iteration
-			prevIndentMultiplier = indentMultiplier
-			updatePrevElements(10)
-
-		end: // label to skip to if list item is invalid (to avoid matching item as list so it may be rendered as a paragraph)
 		}
 
 		// determine whether to render line as paragraph
