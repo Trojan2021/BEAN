@@ -60,6 +60,8 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	var prevListWasOrdered bool  // stores whether the previous list was ordered
 	var bullet string            // stores the bullet character for lists
+	//var bulletLen int            // stores the length of the bullet string
+	var wrapPadding string // stores the padding for new lines in wrapped list items
 	/// LISTS: ORDERED
 	var orderedIterator = 1          // stores the current number of the ordered list item
 	var orderedIteratorHistory []int // stores the history of ordered list items
@@ -310,10 +312,6 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 		} else if list.MatchString(internalOutput) {
 			// lists
 			substrings := list.FindStringSubmatch(internalOutput)
-
-			// stores newline characters to begin list item with; declared early to accommodate goto statement
-			var lineBeginning string
-
 			validMarkdown, indentMultiplier := calcIndentMultiplier(substrings[1])
 			if !validMarkdown {
 				// the list item is invalid; skip list processing
@@ -324,6 +322,7 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 					// operations to take for unordered lists
 
 					// determine the bullet character based on the indentation level
+					wrapPadding = ""
 					if indentMultiplier%2 == 0 {
 						bullet = "• "
 					} else {
@@ -355,15 +354,20 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 
 					// determine numbering type based on the indentation level
 					if indentMultiplier%2 == 0 {
+						// get bullet string and length (decimal)
 						bullet = strconv.Itoa(orderedIterator) + ". "
+						wrapPadding = strings.Repeat(" ", len(bullet)-2)
 					} else {
+						// get bullet string and length (roman)
 						bullet = convertroman.FromInt(orderedIterator) + ". "
+						wrapPadding = strings.Repeat(" ", ansi.StringWidth(bullet)-2)
 					}
 
 					prevListWasOrdered = true
 				}
 
 				// determine how many new lines to precede list with
+				var lineBeginning string
 				if i != 0 {
 					if prevElements[0] == 255 && prevElements[1] == 0 {
 						// precede the list with two newline characters if it follows a paragraph that is separated by blank lines
@@ -376,7 +380,7 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 				}
 
 				// write the list item with the appropriate indentation
-				internalOutput = lineBeginning + strings.ReplaceAll(ansi.Wrap(strings.Repeat(" ", indentMultiplier*4)+bullet+substrings[3], terminalWidth, ""), "\n", "\n  "+strings.Repeat(" ", indentMultiplier*4)) + "\n"
+				internalOutput = lineBeginning + strings.ReplaceAll(ansi.Wrap(strings.Repeat(" ", indentMultiplier*4)+bullet+substrings[3], terminalWidth, ""), "\n", "\n  "+wrapPadding+strings.Repeat(" ", indentMultiplier*4)) + "\n"
 
 				// supply information for next line iteration
 				prevIndentMultiplier = indentMultiplier
