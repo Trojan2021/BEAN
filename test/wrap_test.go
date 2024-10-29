@@ -74,6 +74,11 @@ func TestTextWrapping(t *testing.T) {
 			expected: "• First item\n    i. Sub item 1\n    ii. Sub item 2 is really quite long gee I wonder if this will wrap correctly\n        to the next line it sure would be nice if it did\n    iii. Sub item 3 is really quite long gee I wonder if this will wrap\n         correctly to the next line it sure would be nice if it did\n• Second item is also really long to prove that unindented list items can also\n  wrap in the same way as indented ones\n",
 		},
 		{
+			name:     "Ordered list item that wraps several times",
+			input:    []string{"1. This is an ordered list item that is very long and should wrap several times. This test is meant to verify that ordered list items that wrap more than once have the correct padding on not just the first wrapped line, but also each additional wrapped line following the first."},
+			expected: "1. This is an ordered list item that is very long and should wrap several times.\n   This test is meant to verify that ordered list items that wrap more than once\n   have the correct padding on not just the first wrapped line, but also each\n   additional wrapped line following the first.\n",
+		},
+		{
 			// Previous bug: fixed by switching from reflow to github.com/charmbracelet/x/ansi
 			name:     "Invalid unordered list item that should wrap",
 			input:    []string{"        - Invalid sub item that is loong enough to demonstrate that text wrapping works on invalid list items"},
