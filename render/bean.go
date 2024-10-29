@@ -60,8 +60,7 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	var prevListWasOrdered bool  // stores whether the previous list was ordered
 	var bullet string            // stores the bullet character for lists
-	//var bulletLen int            // stores the length of the bullet string
-	var wrapPadding string // stores the padding for new lines in wrapped list items
+	var wrapPadding string       // stores the padding for new lines in wrapped list items
 	/// LISTS: ORDERED
 	var orderedIterator = 1          // stores the current number of the ordered list item
 	var orderedIteratorHistory []int // stores the history of ordered list items
