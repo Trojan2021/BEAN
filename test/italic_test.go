@@ -6,7 +6,7 @@ import (
 	bean "github.com/Trojan2021/BEAN/render"
 )
 
-func TestRenderItalicText(t *testing.T) {
+func TestItalicText(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    []string

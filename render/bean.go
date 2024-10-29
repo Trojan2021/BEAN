@@ -8,17 +8,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/muesli/reflow/wordwrap"
-	"github.com/muesli/reflow/wrap"
+	"github.com/charmbracelet/x/ansi"
+	"github.com/rwinkhart/convertroman"
 )
 
 // TODO General:
 // Optionally support auto-detection of tab (space) width; if compiled to do this, replace indentSpaces with a variable holding the detected value
 // Optionally support an additional pass over the fully joined string to find bold/italic/strikethrough/in-line code elements that span multiple lines
-//
-// TODO Lists:
-// Alternate between typical numbering and roman numerals for ordered lists
-// Alternate between closed and open bullets for unordered lists
+// Optionally support basic theming by setting variables in a global struct
 //
 // TODO Missing Elements:
 // Multi-line code blocks (w/syntax highlighting)
@@ -63,6 +60,7 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 	var prevIndentMultiplier int // stores the value of the previous indentation multiplier
 	var prevListWasOrdered bool  // stores whether the previous list was ordered
 	var bullet string            // stores the bullet character for lists
+	var wrapPadding string       // stores the padding for new lines in wrapped list items
 	/// LISTS: ORDERED
 	var orderedIterator = 1          // stores the current number of the ordered list item
 	var orderedIteratorHistory []int // stores the history of ordered list items
@@ -126,13 +124,13 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 	// mergeBuffers merges the contents of pBuffer (word-wrapped) into oBuffer and resets pBuffer.
 	mergeBuffers := func() {
 		if pBuffer.Len() > 0 {
-			oBuffer.WriteString(wrap.String(wordwrap.String(pBuffer.String(), terminalWidth), terminalWidth))
+			oBuffer.WriteString(ansi.Wrap(pBuffer.String(), terminalWidth, ""))
 			pBuffer.Reset()
 		}
 	}
 
 	// renderParagraph renders the current line as a paragraph by managing pBuffer and oBuffer.
-	renderParagraph := func(lineNumber int, lines *[]string, lineInProgress string) {
+	renderParagraph := func(lineInProgress string) {
 		// trim spaces from current and previous line (later used to determine if they are empty)
 		currentLineTrimmed := strings.TrimSpace(lineInProgress)
 		if currentLineTrimmed == "" {
@@ -313,70 +311,86 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 		} else if list.MatchString(internalOutput) {
 			// lists
 			substrings := list.FindStringSubmatch(internalOutput)
-
 			validMarkdown, indentMultiplier := calcIndentMultiplier(substrings[1])
 			if !validMarkdown {
-				// do nothing (do not process as list item)
-				break
-			}
+				// the list item is invalid; skip list processing
+			} else {
+				// the list item is valid; proceed with list processing
+				switch substrings[2][0] {
+				case '-', '+', '*':
+					// operations to take for unordered lists
 
-			switch substrings[2][0] {
-			case '-', '+', '*':
-				// operations to take for unordered lists
-				bullet = "• "
-
-				if substrings[1] == "" {
-					// if the item is an unordered list parent, reset the orderedIterator and its history
-					orderedIterator = 1
-					orderedIteratorHistory = nil
-				} else if indentMultiplier != prevIndentMultiplier {
-					// otherwise, if changing the indentation level, update the history of ordered list iterators
-					// must be done for compatibility with mixed ordered/unordered lists
-					updateOrderedIteratorHistory(indentMultiplier)
-				}
-
-				prevListWasOrdered = false
-			default:
-				// operations to take for ordered lists
-				if indentMultiplier == prevIndentMultiplier {
-					// if not changing the indentation level, increment the iterator
-					if prevListWasOrdered {
-						orderedIterator++
+					// determine the bullet character based on the indentation level
+					wrapPadding = ""
+					if indentMultiplier%2 == 0 {
+						bullet = "• "
+					} else {
+						bullet = "‣ "
 					}
-				} else {
-					// otherwise, update the history of ordered list iterators
-					updateOrderedIteratorHistory(indentMultiplier)
+
+					if substrings[1] == "" {
+						// if the item is an unordered list parent, reset the orderedIterator and its history
+						orderedIterator = 1
+						orderedIteratorHistory = nil
+					} else if indentMultiplier != prevIndentMultiplier {
+						// otherwise, if changing the indentation level, update the history of ordered list iterators
+						// must be done for compatibility with mixed ordered/unordered lists
+						updateOrderedIteratorHistory(indentMultiplier)
+					}
+
+					prevListWasOrdered = false
+				default:
+					// operations to take for ordered lists
+					if indentMultiplier == prevIndentMultiplier {
+						// if not changing the indentation level, increment the iterator
+						if prevListWasOrdered {
+							orderedIterator++
+						}
+					} else {
+						// otherwise, update the history of ordered list iterators
+						updateOrderedIteratorHistory(indentMultiplier)
+					}
+
+					// determine numbering type based on the indentation level
+					if indentMultiplier%2 == 0 {
+						// get bullet string and length (decimal)
+						bullet = strconv.Itoa(orderedIterator) + ". "
+						wrapPadding = strings.Repeat(" ", len(bullet)-2)
+					} else {
+						// get bullet string and length (roman)
+						bullet = convertroman.FromInt(orderedIterator) + ". "
+						wrapPadding = strings.Repeat(" ", ansi.StringWidth(bullet)-2)
+					}
+
+					prevListWasOrdered = true
 				}
-				bullet = strconv.Itoa(orderedIterator) + ". "
 
-				prevListWasOrdered = true
-			}
-
-			// determine how many new lines to precede list with
-			var lineBeginning string
-			if i != 0 {
-				if prevElements[0] == 255 && prevElements[1] == 0 {
-					// precede the list with two newline characters if it follows a paragraph that is separated by blank lines
-					lineBeginning = "\n\n"
-				} else if prevElements[0] == 0 || (prevElements[0] == 255 && prevElements[1] == 10) {
-					// precede the list with one newline character if it follows another list that is separated by blank lines
-					// OR if it directly follows a paragraph
-					lineBeginning = "\n"
+				// determine how many new lines to precede list with
+				var lineBeginning string
+				if i != 0 {
+					if prevElements[0] == 255 && prevElements[1] == 0 {
+						// precede the list with two newline characters if it follows a paragraph that is separated by blank lines
+						lineBeginning = "\n\n"
+					} else if prevElements[0] == 0 || (prevElements[0] == 255 && prevElements[1] == 10) {
+						// precede the list with one newline character if it follows another list that is separated by blank lines
+						// OR if it directly follows a paragraph
+						lineBeginning = "\n"
+					}
 				}
+
+				// write the list item with the appropriate indentation
+				internalOutput = lineBeginning + strings.ReplaceAll(ansi.Wrap(strings.Repeat(" ", indentMultiplier*4)+bullet+substrings[3], terminalWidth, ""), "\n", "\n  "+wrapPadding+strings.Repeat(" ", indentMultiplier*4)) + "\n"
+
+				// supply information for next line iteration
+				prevIndentMultiplier = indentMultiplier
+				updatePrevElements(10)
 			}
-
-			// write the list item with the appropriate indentation
-			internalOutput = lineBeginning + strings.ReplaceAll(wrap.String(wordwrap.String(strings.Repeat(" ", indentMultiplier*4)+bullet+substrings[3], terminalWidth), terminalWidth), "\n", "\n  "+strings.Repeat(" ", indentMultiplier*4)) + "\n"
-
-			// supply information for next line iteration
-			prevIndentMultiplier = indentMultiplier
-			updatePrevElements(10)
 		}
 
 		// determine whether to render line as paragraph
 		if !matchedSomething {
 			// render as paragraph if no Markdown was matched or if a paragraph was explicitly matched
-			renderParagraph(i, &lines, internalOutput)
+			renderParagraph(internalOutput)
 		} else {
 			// since a non-paragraph element was matched, merge pBuffer into oBuffer and reset pBuffer
 			mergeBuffers()
