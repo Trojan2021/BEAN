@@ -402,10 +402,10 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 	mergeBuffers()
 
 	// ensure oBuffer does not end in any new lines
-	removeLevels := 1
-	for oBuffer.String()[oBuffer.Len()-removeLevels] == '\n' {
-		removeLevels++
+	i := oBuffer.Len() - 1
+	for i >= 0 && oBuffer.String()[i] == '\n' {
+		i--
 	}
 
-	return oBuffer.String()[:oBuffer.Len()-(removeLevels-1)]
+	return oBuffer.String()[:i+1]
 }
