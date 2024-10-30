@@ -41,12 +41,12 @@ func TestInlineCode(t *testing.T) {
 		{
 			name:     "Used in a list",
 			input:    []string{"- List parent", "\t- List child with `code` in it."},
-			expected: "• List parent\n    ‣ List child with \033[48;5;238;38;5;1mcode\033[0m in it.\n",
+			expected: "• List parent\n    ‣ List child with \033[48;5;238;38;5;1mcode\033[0m in it.",
 		},
 		{
 			name:     "Used in a header",
 			input:    []string{"# Header With `Code` In It"},
-			expected: "\033[1m─Header With \033[48;5;238;38;5;1mCode\033[0m In It─\033[0m\n",
+			expected: "\033[1m─Header With \033[48;5;238;38;5;1mCode\033[0m In It─\033[0m",
 		},
 	}
 	for _, tt := range tests {

@@ -17,17 +17,17 @@ func TestHR(t *testing.T) {
 		{
 			name:     "Hyphen HR",
 			input:    []string{"---"},
-			expected: strings.Repeat("─", terminalWidth) + "\n\n",
+			expected: strings.Repeat("─", terminalWidth),
 		},
 		{
 			name:     "Asterisk HR",
 			input:    []string{"***"},
-			expected: strings.Repeat("─", terminalWidth) + "\n\n",
+			expected: strings.Repeat("─", terminalWidth),
 		},
 		{
 			name:     "Underscore HR",
 			input:    []string{"___"},
-			expected: strings.Repeat("─", terminalWidth) + "\n\n",
+			expected: strings.Repeat("─", terminalWidth),
 		},
 		{
 			name:     "Mixed HR (should render as paragraph)",
@@ -37,17 +37,17 @@ func TestHR(t *testing.T) {
 		{
 			name:     "Overkill hyphen HR",
 			input:    []string{"----------"},
-			expected: strings.Repeat("─", terminalWidth) + "\n\n",
+			expected: strings.Repeat("─", terminalWidth),
 		},
 		{
 			name:     "Overkill asterisk HR",
 			input:    []string{"**********"},
-			expected: strings.Repeat("─", terminalWidth) + "\n\n",
+			expected: strings.Repeat("─", terminalWidth),
 		},
 		{
 			name:     "Overkill underscore HR",
 			input:    []string{"__________"},
-			expected: strings.Repeat("─", terminalWidth) + "\n\n",
+			expected: strings.Repeat("─", terminalWidth),
 		},
 	}
 	for _, tt := range tests {

@@ -32,17 +32,17 @@ func TestNewline(t *testing.T) {
 		{
 			name:     "Paragraph followed by list (minimal spacing)",
 			input:    []string{"This is a happy little paragraph", "- First item", "- Second item", "\t- Sub item 1", "- Third item"},
-			expected: "This is a happy little paragraph\n• First item\n• Second item\n    ‣ Sub item 1\n• Third item\n",
+			expected: "This is a happy little paragraph\n• First item\n• Second item\n    ‣ Sub item 1\n• Third item",
 		},
 		{
 			name:     "Paragraph followed by list (standard spacing; the empty line should be preserved in this case)",
 			input:    []string{"This is a happy little paragraph", "", "- First item", "- Second item", "\t- Sub item 1", "- Third item"},
-			expected: "This is a happy little paragraph\n\n• First item\n• Second item\n    ‣ Sub item 1\n• Third item\n",
+			expected: "This is a happy little paragraph\n\n• First item\n• Second item\n    ‣ Sub item 1\n• Third item",
 		},
 		{
 			name:     "Paragraph followed by list (exaggerated spacing; one empty line should be preserved in this case)",
 			input:    []string{"This is a happy little paragraph", "", "", "", "", "", "", "", "", "- First item", "- Second item", "\t- Sub item 1", "- Third item"},
-			expected: "This is a happy little paragraph\n\n• First item\n• Second item\n    ‣ Sub item 1\n• Third item\n",
+			expected: "This is a happy little paragraph\n\n• First item\n• Second item\n    ‣ Sub item 1\n• Third item",
 		},
 		{
 			name:     "List followed by a paragraph (minimal spacing)",
@@ -62,12 +62,12 @@ func TestNewline(t *testing.T) {
 		{
 			name:     "Multiple HRs",
 			input:    []string{"___", "---", "***", "***", "", "", "", "___"},
-			expected: strings.Repeat("─", terminalWidth) + "\n\n" + strings.Repeat("─", terminalWidth) + "\n\n" + strings.Repeat("─", terminalWidth) + "\n\n" + strings.Repeat("─", terminalWidth) + "\n\n" + strings.Repeat("─", terminalWidth) + "\n\n",
+			expected: strings.Repeat("─", terminalWidth) + "\n\n" + strings.Repeat("─", terminalWidth) + "\n\n" + strings.Repeat("─", terminalWidth) + "\n\n" + strings.Repeat("─", terminalWidth) + "\n\n" + strings.Repeat("─", terminalWidth),
 		},
 		{
 			name:     "HR after paragraph",
 			input:    []string{"This is a paragraph.", "---"},
-			expected: "This is a paragraph.\n\n" + strings.Repeat("─", terminalWidth) + "\n\n",
+			expected: "This is a paragraph.\n\n" + strings.Repeat("─", terminalWidth),
 		},
 		{
 			name:     "Paragraph after HR",
@@ -82,17 +82,17 @@ func TestNewline(t *testing.T) {
 		{
 			name:     "HR after header",
 			input:    []string{"# Heading 1", "---"},
-			expected: "\033[1m─Heading 1─\033[0m\n\n" + strings.Repeat("─", terminalWidth) + "\n\n",
+			expected: "\033[1m─Heading 1─\033[0m\n\n" + strings.Repeat("─", terminalWidth),
 		},
 		{
 			name:     "Header after HR",
 			input:    []string{"---", "# Heading 1"},
-			expected: strings.Repeat("─", terminalWidth) + "\n\n" + "\033[1m─Heading 1─\033[0m\n",
+			expected: strings.Repeat("─", terminalWidth) + "\n\n" + "\033[1m─Heading 1─\033[0m",
 		},
 		{
 			name:     "Header after HR (w/blank lines)",
 			input:    []string{"---", "", "# Heading 1"},
-			expected: strings.Repeat("─", terminalWidth) + "\n\n" + "\033[1m─Heading 1─\033[0m\n",
+			expected: strings.Repeat("─", terminalWidth) + "\n\n" + "\033[1m─Heading 1─\033[0m",
 		},
 	}
 	for _, tt := range tests {
