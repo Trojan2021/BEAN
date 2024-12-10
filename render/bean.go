@@ -246,7 +246,7 @@ func RenderMarkdown(lines []string, terminalWidth int) string {
 				internalOutput = substrings[1] + "\x1f" + substrings[3]
 
 				// save rendered in-line code block for later restoration
-				renderedCodeBlocks = append(renderedCodeBlocks, "\033[48;5;238;38;5;1m"+substrings[2]+"\033[0m")
+				renderedCodeBlocks = append(renderedCodeBlocks, "\033[48;5;238;38;5;1m"+substrings[2]+"\033[39;49m")
 
 				// do not update prevElements since pCode/bold/italic/strikethrough is part of a paragraph (consider it unmatched so that renderParagraph can handle it properly)
 			} else {

@@ -51,7 +51,7 @@ func TestTextWrapping(t *testing.T) {
 		{
 			name:     "Single-line paragraph w/inline code across lines (should wrap once)",
 			input:    []string{"This is a fairly long paragraph that was input by the user in a single `line and will likely need to be` wrapped."},
-			expected: "This is a fairly long paragraph that was input by the user in a single \033[48;5;238;38;5;1mline and\nwill likely need to be\033[0m wrapped.",
+			expected: "This is a fairly long paragraph that was input by the user in a single \033[48;5;238;38;5;1mline and\nwill likely need to be\033[39;49m wrapped.",
 		},
 		{
 			name:     "Single-line paragraph w/o spaces (should wrap once)",
