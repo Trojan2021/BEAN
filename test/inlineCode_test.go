@@ -48,6 +48,11 @@ func TestInlineCode(t *testing.T) {
 			input:    []string{"# Header With `Code` In It"},
 			expected: "\033[1m─Header With \033[48;5;238;38;5;1mCode\033[39;49m In It─\033[0m",
 		},
+		{
+			name:     "Inside other emphasis elements",
+			input:    []string{"~~Strikethrough and **bold with `in-line code` should continue to here~~** and no further."},
+			expected: "\033[9mStrikethrough and \033[1mbold with \033[48;5;238;38;5;1min-line code\033[39;49m should continue to here\033[0m\033[0m and no further.",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
